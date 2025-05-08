@@ -1,287 +1,367 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>온라인 메모장</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      background-color: #121212;
-      color: #eee;
-    }
-    .notification {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #333;
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 5px;
-      opacity: 0;
-      transition: opacity 0.5s;
-      pointer-events: none;
-    }
-    .notification.show {
-      opacity: 1;
-    }
-    .app {
-      flex: 1;
-      display: flex;
-    }
-    .sidebar {
-      width: 250px;
-      background-color: #1e1e1e;
-      border-right: 1px solid #333;
-      display: flex;
-      flex-direction: column;
-    }
-    .sidebar-header {
-      display: flex;
-      align-items: center;
-      padding: 10px;
-      border-bottom: 1px solid #333;
-    }
-    .add-btn {
-      font-size: 24px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #eee;
-    }
-    .add-box {
-      margin-left: 10px;
-    }
-    .add-box.hidden {
-      display: none;
-    }
-    .add-box input {
-      padding: 5px;
-      width: 150px;
-      border: 1px solid #555;
-      border-radius: 3px;
-      background-color: #2a2a2a;
-      color: #eee;
-    }
-    .add-box input::placeholder {
-      color: #777;
-    }
-    .memo-list {
-      list-style: none;
-      overflow-y: auto;
-      flex: 1;
-    }
-    .memo-list li {
-      padding: 10px;
-      cursor: pointer;
-      border-bottom: 1px solid #2a2a2a;
-      color: #ddd;
-    }
-    .memo-list li.active {
-      background: #333;
-      color: #fff;
-    }
-    .content {
-      flex: 1;
-      position: relative;
-      padding: 20px;
-      background-color: #1e1e1e;
-    }
-    .memo-title, .memo-content {
-      background-color: #2a2a2a;
-      color: #eee;
-      border-radius: 4px;
-    }
-    .memo-title {
-      width: 100%;
-      font-size: 24px;
-      border: none;
-      outline: none;
-      margin-bottom: 10px;
-      padding: 10px;
-    }
-    .memo-detail {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-    .memo-content {
-      width: 100%;
-      flex: 1;
-      overflow-y: auto;
-      outline: none;
-      padding: 10px;
-    }
-    .no-memo {
-      color: #555;
-    }
-  </style>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>온라인 메모장</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #121212;
+            color: #eee;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+
+        .notification.show {
+            opacity: 1;
+        }
+
+        .app {
+            flex: 1;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #1e1e1e;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .add-btn {
+            font-size: 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #eee;
+        }
+
+        .add-box {
+            margin-left: 10px;
+        }
+
+        .add-box.hidden {
+            display: none;
+        }
+
+        .add-box input {
+            padding: 5px;
+            width: 100px;
+            border: 1px solid #555;
+            border-radius: 3px;
+            background-color: #2a2a2a;
+            color: #eee;
+        }
+
+        .add-box input::placeholder {
+            color: #777;
+        }
+
+        .register-btn {
+            margin-left: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+            background-color: #2a2a2a;
+            color: #eee;
+            border: 1px solid #555;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .register-btn:hover {
+            background-color: #3a3a3a;
+        }
+
+        .memo-list {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .memo-list li {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #2a2a2a;
+            color: #ddd;
+            position: relative;
+        }
+        .delete-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: #888;
+            cursor: pointer;
+        }
+        .delete-btn:hover {
+            color: #f55;
+        }
+
+        .memo-list li.active {
+            background: #333;
+            color: #fff;
+        }
+
+        .content {
+            flex: 1;
+            position: relative;
+            padding: 20px;
+            background-color: #1e1e1e;
+        }
+
+        .memo-title, .memo-content {
+            background-color: #2a2a2a;
+            color: #eee;
+            border-radius: 4px;
+        }
+
+        .memo-title {
+            width: 100%;
+            font-size: 24px;
+            border: none;
+            outline: none;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+
+        .memo-detail {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .memo-content {
+            width: 100%;
+            flex: 1;
+            overflow-y: auto;
+            outline: none;
+            padding: 10px;
+        }
+
+        .no-memo {
+            color: #555;
+        }
+    </style>
 </head>
 <body>
-  <div id="notification" class="notification">최초 접속으로 확인되었습니다</div>
-  <div class="app">
+<div id="notification" class="notification">최초 접속으로 확인되었습니다</div>
+<div class="app">
     <div class="sidebar">
-      <div class="sidebar-header">
-        <button id="addBtn" class="add-btn">+</button>
-        <div id="addBox" class="add-box hidden">
-          <input id="codeInput" type="text" placeholder="코드 입력 또는 빈칸"/>
+        <div class="sidebar-header">
+            <button id="addBtn" class="add-btn">+</button>
+            <div id="addBox" class="add-box hidden">
+                <input id="codeInput" type="text" placeholder="코드 입력 또는 빈칸"/>
+                <button id="registerBtn" class="register-btn">등록</button>
+            </div>
         </div>
-      </div>
-      <ul id="memoList" class="memo-list"></ul>
+        <ul id="memoList" class="memo-list"></ul>
     </div>
     <div class="content">
-      <div id="memoDetail" class="memo-detail hidden">
-        <input id="memoTitle" class="memo-title" type="text" />
-        <div id="memoContent" class="memo-content" contenteditable="true"></div>
-      </div>
+        <div id="memoDetail" class="memo-detail hidden">
+            <input id="memoTitle" class="memo-title" type="text"/>
+            <div id="memoContent" class="memo-content" contenteditable="true"></div>
+        </div>
     </div>
-  </div>
-  <script>
+</div>
+<script>
     document.addEventListener('DOMContentLoaded', () => {
-      const clientIdKey = 'clientId';
-      const noteCodesKey = 'noteCodes';
-      let clientId = localStorage.getItem(clientIdKey);
-      const notification = document.getElementById('notification');
-      if (!clientId) {
-        clientId = crypto.randomUUID();
-        localStorage.setItem(clientIdKey, clientId);
-        notification.classList.add('show');
-        setTimeout(() => {
-          notification.classList.remove('show');
-        }, 5000);
-      }
-
-      const sidebarList = document.getElementById('memoList');
-      const memoDetail = document.getElementById('memoDetail');
-      const memoTitle = document.getElementById('memoTitle');
-      const memoContent = document.getElementById('memoContent');
-      const addBtn = document.getElementById('addBtn');
-      const addBox = document.getElementById('addBox');
-      const codeInput = document.getElementById('codeInput');
-
-      let codes = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
-      let memos = [];
-      let activeCode = null;
-
-      function fetchMemos() {
-        if (codes.length > 0) {
-          fetch('/note/list?' + codes.map(c => 'codes=' + encodeURIComponent(c)).join('&'))
-            .then(res => res.json())
-            .then(data => {
-              memos = data;
-              renderList();
-              selectMemo(codes[0]);
-            });
-        } else {
-          memoDetail.classList.add('hidden');
+        const clientIdKey = 'clientId';
+        const noteCodesKey = 'noteCodes';
+        let clientId = localStorage.getItem(clientIdKey);
+        const notification = document.getElementById('notification');
+        if (!clientId) {
+            clientId = crypto.randomUUID();
+            localStorage.setItem(clientIdKey, clientId);
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
         }
-      }
 
-      function renderList() {
-        sidebarList.innerHTML = '';
-        memos.forEach(m => {
-          const li = document.createElement('li');
-          li.textContent = m.title || '(제목없음)';
-          li.dataset.code = m.code;
-          li.addEventListener('click', () => selectMemo(m.code));
-          if (m.code === activeCode) li.classList.add('active');
-          sidebarList.appendChild(li);
-        });
-      }
+        const sidebarList = document.getElementById('memoList');
+        const memoDetail = document.getElementById('memoDetail');
+        const memoTitle = document.getElementById('memoTitle');
+        const memoContent = document.getElementById('memoContent');
+        const addBtn = document.getElementById('addBtn');
+        const addBox = document.getElementById('addBox');
+        const codeInput = document.getElementById('codeInput');
+        const registerBtn = document.getElementById('registerBtn');
 
-      function selectMemo(code) {
-        activeCode = code;
-        const memo = memos.find(m => m.code === code);
-        if (memo) {
-          memoDetail.classList.remove('hidden');
-          memoTitle.value = memo.title;
-          memoContent.textContent = memo.content;
-          updateActiveList();
-        } else {
-          memoDetail.classList.add('hidden');
+        let codes = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
+        let memos = [];
+        let activeCode = null;
+
+        function fetchMemos() {
+            if (codes.length > 0) {
+                fetch('/note/list?' + codes.map(c => 'codes=' + encodeURIComponent(c)).join('&'))
+                    .then(res => res.json())
+                    .then(data => {
+                        memos = data;
+                        renderList();
+                        selectMemo(memos[0].code);
+                    });
+            } else {
+                memoDetail.classList.add('hidden');
+            }
         }
-      }
 
-      function updateActiveList() {
-        document.querySelectorAll('.memo-list li').forEach(li => {
-          li.classList.toggle('active', li.dataset.code === activeCode);
-        });
-      }
+        function renderList() {
+            sidebarList.innerHTML = '';
+            memos.forEach(m => {
+                const li = document.createElement('li');
+                li.textContent = m.title || '(제목없음)';
+                li.dataset.code = m.code;
+                li.addEventListener('click', () => selectMemo(m.code));
+                if (m.code === activeCode) li.classList.add('active');
 
+                const delBtn = document.createElement('span');
+                delBtn.textContent = 'x';
+                delBtn.classList.add('delete-btn');
+                delBtn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    codes = codes.filter(c => c !== m.code);
+                    localStorage.setItem(noteCodesKey, JSON.stringify(codes));
+                    window.location.reload();
+                });
+                li.appendChild(delBtn);
 
-      memoTitle.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          updateTitle();
-        }
-      });
-      memoTitle.addEventListener('blur', updateTitle);
-      memoTitle.addEventListener('keydown', e => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-          e.preventDefault();
-          updateTitle();
-        }
-      });
-
-      memoContent.addEventListener('blur', updateContent);
-      memoContent.addEventListener('keydown', e => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-          e.preventDefault();
-          updateContent();
-        }
-      });
-
-      function updateContent() {
-        const newContent = memoContent.textContent.trim();
-        if (!newContent) return;
-        fetch('/note/' + activeCode + '/content', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'text/plain' },
-          body: newContent
-        }).then(() => fetchMemos());
-      }
-
-      function updateTitle() {
-        let newTitle = memoTitle.value.trim();
-        if (!newTitle) newTitle = '제목없음';
-        fetch('/note/' + activeCode + '/title', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'text/plain' },
-          body: newTitle
-        }).then(() => { fetchMemos(); });
-      }
-
-      addBtn.addEventListener('click', () => {
-        addBox.classList.toggle('hidden');
-        if (!addBox.classList.contains('hidden')) codeInput.focus();
-      });
-
-      codeInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          const input = codeInput.value.trim();
-          const newCode = input || crypto.randomUUID();
-          fetch('/note/' + newCode, { method: 'POST' })
-            .then(res => res.json())
-            .then(note => {
-              codes.push(note.code);
-              localStorage.setItem(noteCodesKey, JSON.stringify(codes));
-              window.location.reload();
+                sidebarList.appendChild(li);
             });
         }
-      });
 
-      fetchMemos();
+        function selectMemo(code) {
+            activeCode = code;
+            const memo = memos.find(m => m.code === code);
+            if (memo) {
+                memoDetail.classList.remove('hidden');
+                memoTitle.disabled = false;
+                memoContent.contentEditable = 'true';
+                memoTitle.value = memo.title;
+                memoContent.textContent = memo.content;
+                updateActiveList();
+            } else {
+                memoTitle.disabled = true;
+                memoContent.contentEditable = 'false';
+                memoDetail.classList.add('hidden');
+            }
+        }
+
+        function updateActiveList() {
+            document.querySelectorAll('.memo-list li').forEach(li => {
+                li.classList.toggle('active', li.dataset.code === activeCode);
+            });
+        }
+
+
+        memoTitle.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateTitle();
+            }
+        });
+        memoTitle.addEventListener('blur', updateTitle);
+        memoTitle.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                updateTitle();
+            }
+        });
+
+        memoContent.addEventListener('blur', updateContent);
+        memoContent.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                updateContent();
+            }
+        });
+
+        function updateContent() {
+            const newContent = memoContent.textContent.trim();
+            if (!newContent) return;
+            fetch('/note/' + activeCode + '/content', {
+                method: 'PUT',
+                headers: {'Content-Type': 'text/plain'},
+                body: newContent
+            }).then(() => fetchMemos());
+        }
+
+        function updateTitle() {
+            let newTitle = memoTitle.value.trim();
+            if (!newTitle) newTitle = '제목없음';
+            fetch('/note/' + activeCode + '/title', {
+                method: 'PUT',
+                headers: {'Content-Type': 'text/plain'},
+                body: newTitle
+            }).then(() => {
+                fetchMemos();
+            });
+        }
+
+        addBtn.addEventListener('click', () => {
+            addBox.classList.toggle('hidden');
+            if (!addBox.classList.contains('hidden')) codeInput.focus();
+        });
+
+        codeInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const input = codeInput.value.trim();
+                const newCode = input || crypto.randomUUID();
+                fetch('/note/' + newCode, {method: 'POST'})
+                    .then(res => res.json())
+                    .then(note => {
+                        codes.push(note.code);
+                        localStorage.setItem(noteCodesKey, JSON.stringify(codes));
+                        window.location.reload();
+                    });
+            }
+        });
+
+        registerBtn.addEventListener('click', () => {
+            const input = codeInput.value.trim();
+            const newCode = input || crypto.randomUUID();
+            fetch('/note/' + newCode, {method: 'POST'})
+                .then(res => res.json())
+                .then(note => {
+                    codes.push(note.code);
+                    localStorage.setItem(noteCodesKey, JSON.stringify(codes));
+                    window.location.reload();
+                });
+        });
+
+        fetchMemos();
     });
-  </script>
+</script>
 </body>
 </html>
