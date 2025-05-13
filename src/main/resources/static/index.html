@@ -4,24 +4,33 @@
     <meta charset="UTF-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="color-scheme" content="light only"/>
+    <meta name="supported-color-schemes" content="light"/>
     <title>온라인 메모장</title>
     <style>
         :root {
-            --bg-color: #ffffff;
-            --text-color: #000000;
-            --sidebar-bg: #f5f5f5;
-            --sidebar-text: #333333;
+            --bg-color: #fefefe;
+            --text-color: #333333;
+            --sidebar-bg: #e8eaed;
+            --sidebar-text: #2c2c2c;
             --content-bg: #ffffff;
-            --content-text: #000000;
+            --content-text: #1a1a1a;
+            color-scheme: light only;
         }
 
         body.dark-mode {
-            --bg-color: #121212;
-            --text-color: #eee;
-            --sidebar-bg: #1e1e1e;
-            --sidebar-text: #ddd;
-            --content-bg: #1e1e1e;
-            --content-text: #eee;
+            --bg-color: #181a1b;
+            --text-color: #e8e6e3;
+            --sidebar-bg: #242526;
+            --sidebar-text: #b8babb;
+            --content-bg: #1c1e1f;
+            --content-text: #d3d6d8;
+        }
+
+        body.dark-mode .memo-title,
+        body.dark-mode .memo-content {
+            background-color: var(--content-bg);
+            color: var(--content-text);
         }
 
         body {
@@ -33,20 +42,37 @@
             flex-direction: column;
         }
 
+        /* Smooth theme transition */
+        body,
+        .sidebar,
+        .topbar,
+        .content,
+        .memo-title,
+        .memo-content,
+        .invite-dialog {
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
         .sidebar {
             background-color: var(--sidebar-bg);
             color: var(--sidebar-text);
         }
 
-        .content {
-            background-color: var(--content-bg);
-            color: var(--content-text);
-        }
 
         .memo-title,
         .memo-content {
-            background-color: var(--sidebar-bg);
+            background-color: #fafafa;
             color: var(--sidebar-text);
+            border-radius: 12px;
+        }
+        #memoDetail {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .memo-content {
+            flex: 1;
+            overflow-y: auto;
         }
 
         .delete-btn {
@@ -102,6 +128,7 @@
             opacity: 0;
             transition: opacity 0.5s;
             pointer-events: none;
+            z-index: 3000;
         }
 
         .notification.show {
@@ -213,7 +240,7 @@
             padding: 10px;
             border-radius: 4px;
         }
-        /* .memo-content-wrapper removed */
+
         .memo-dates {
             position: absolute;
             bottom: 10px;
@@ -225,16 +252,22 @@
         .no-memo {
             color: #555;
         }
+
         .hidden {
             display: none;
         }
-        .no-memo.hidden {
+
+        /* Ensure memo detail panel hides when .hidden is applied */
+        #memoDetail.hidden {
             display: none;
         }
+
+
         /* Invite modal overlay and dialog */
         .invite-modal.hidden {
             display: none;
         }
+
         .invite-modal {
             position: fixed;
             top: 0;
@@ -246,6 +279,7 @@
             justify-content: center;
             z-index: 2000;
         }
+
         .invite-modal .invite-overlay {
             position: absolute;
             top: 0;
@@ -254,18 +288,20 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
         }
+
         .invite-modal .invite-dialog {
             position: relative;
             background-color: var(--content-bg);
             color: var(--content-text);
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             min-width: 280px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+
         .invite-modal .invite-close {
             position: absolute;
             top: 10px;
@@ -276,16 +312,19 @@
             cursor: pointer;
             color: var(--content-text);
         }
+
         .invite-modal .invite-code {
             font-size: 20px;
             margin-bottom: 15px;
             user-select: none;
         }
+
         .invite-modal .invite-qr {
             width: 150px;
             height: 150px;
             margin-bottom: 15px;
         }
+
         .invite-modal .invite-copy-link {
             background: none;
             border: none;
@@ -294,26 +333,60 @@
             color: var(--content-text);
             margin-top: 10px;
         }
+
+        .spinner {
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid var(--text-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Theme icon and animation */
+        .theme-icon {
+          display: inline-block;
+          font-size: 24px;
+          transition: transform 0.3s ease, opacity 0.3s ease;
+          opacity: 1;
+        }
+        .theme-icon.rotate {
+          transform: rotate(360deg);
+          opacity: 0;
+        }
     </style>
 </head>
 <body>
 <div id="notification" class="notification">최초 접속으로 확인되었습니다</div>
 <div class="topbar">
     <button id="toggleSidebar" class="add-btn">☰</button>
-    <button id="themeToggle" class="add-btn">🌓</button>
+    <button id="themeToggle" class="add-btn">
+      <span id="themeIcon" class="theme-icon"></span>
+    </button>
 </div>
 <div class="app">
     <div class="sidebar">
         <div class="sidebar-header">
             <input id="codeInput"
                    type="text"
-                   placeholder="코드 입력 (빈칸 시 랜덤)"
+                   placeholder="코드 등록"
                    autocomplete="off"
                    style="flex:1; margin: 0 5px; padding:5px; border:1px solid #555; border-radius:3px; background-color: var(--sidebar-bg); color: var(--sidebar-text);"/>
             <button id="addBtn" class="add-btn">+</button>
         </div>
         <ul id="memoList" class="memo-list"></ul>
-        <div class="sidebar-footer" style="margin-top: auto; padding: 5px 10px; text-align: left; font-size: 12px; color: var(--sidebar-text);">
+        <div class="sidebar-footer"
+             style="margin-top: auto; padding: 5px 10px; text-align: left; font-size: 12px; color: var(--sidebar-text);">
             <span id="resetTxt" style="cursor: pointer; user-select: none;">초기화</span>
         </div>
     </div>
@@ -346,13 +419,28 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        function updateThemeIcon() {
+          if (document.body.classList.contains('dark-mode')) {
+            themeIcon.textContent = '☀️';
+          } else {
+            themeIcon.textContent = '🌙';
+          }
+        }
+        // Initialize icon
         const storedTheme = localStorage.getItem('theme') || 'dark-mode';
         document.body.classList.add(storedTheme);
+        updateThemeIcon();
         themeToggle.addEventListener('click', () => {
+          themeIcon.classList.add('rotate');
+          setTimeout(() => {
+            themeIcon.classList.remove('rotate');
             document.body.classList.toggle('dark-mode');
             document.body.classList.toggle('light-mode');
             const newTheme = document.body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode';
             localStorage.setItem('theme', newTheme);
+            updateThemeIcon();
+          }, 300);
         });
 
         const toggleSidebar = document.getElementById('toggleSidebar');
@@ -379,6 +467,11 @@
 
         let clientId = localStorage.getItem(clientIdKey);
         const notification = document.getElementById('notification');
+        function showNotification(msg) {
+            notification.textContent = msg;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 2000);
+        }
         if (!clientId) {
             clientId = crypto.randomUUID();
             localStorage.setItem(clientIdKey, clientId);
@@ -398,6 +491,7 @@
         const codeInput = document.getElementById('codeInput');
         const resetTxt = document.getElementById('resetTxt');
         const noMemoElem = document.getElementById('noMemo');
+        const inviteBtn = document.getElementById('inviteBtn');
         // Reset noteCodes in localStorage via small text
         resetTxt.addEventListener('click', () => {
             if (confirm('초기화 하시겠습니까?')) {
@@ -406,7 +500,6 @@
             }
         });
 
-        // Add new memo when pressing Enter in the code input field
         codeInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -417,33 +510,47 @@
         let codes = noteCodeObjs.map(o => o.code);
         let memos = [];
         let activeCode = null;
+        if (codes.length === 0) {
+            memoDetail.classList.add('hidden');
+            inviteBtn.classList.add('hidden');
+            noMemoElem.classList.remove('hidden');
+        }
 
         function fetchMemos() {
-            if (codes.length > 0) {
-                fetch('/note/list?' + codes.map(c => 'codes=' + encodeURIComponent(c)).join('&'))
-                    .then(res => res.json())
-                    .then(data => {
-                        // Order memos according to stored codes sequence
-                        const fetched = data;
-                        memos = codes.map(c => fetched.find(m => m.code === c)).filter(m => m);
-                        renderList();
-                        if (memos.length === 0) {
-                            memoDetail.classList.add('hidden');
-                            inviteBtn.classList.add('hidden');
-                            noMemoElem.classList.remove('hidden');
-                            return;
-                        } else {
-                            noMemoElem.classList.add('hidden');
-                            inviteBtn.classList.remove('hidden');
-                        }
-                        const codeToSelect = activeCode && memos.some(m => m.code === activeCode)
-                            ? activeCode
-                            : memos[0]?.code;
-                        if (codeToSelect) selectMemo(codeToSelect);
-                    });
-            } else {
+            // If there are no saved codes, hide detail and invite, show “no memo” and skip fetching
+            if (codes.length === 0) {
                 memoDetail.classList.add('hidden');
+                inviteBtn.classList.add('hidden');
+                noMemoElem.classList.remove('hidden');
+                return;
             }
+            // Otherwise fetch and render
+            fetch('/note/list?' + codes.map(c => 'codes=' + encodeURIComponent(c)).join('&'))
+                .then(res => res.json())
+                .then(data => {
+                    // Order memos according to stored codes sequence
+                    const fetched = data;
+                    memos = codes.map(c => fetched.find(m => m.code === c)).filter(m => m);
+                    renderList();
+                    // If after fetch there are no memos, treat as no codes
+                    if (memos.length === 0) {
+                        memoDetail.classList.add('hidden');
+                        inviteBtn.classList.add('hidden');
+                        noMemoElem.classList.remove('hidden');
+                        return;
+                    }
+                    // Hide “no memo” and show invite button
+                    noMemoElem.classList.add('hidden');
+                    inviteBtn.classList.remove('hidden');
+                    // If a memo is selected, show detail; otherwise, select the first memo automatically if available
+                    if (activeCode) {
+                        selectMemo(activeCode);
+                    } else if (memos.length > 0) {
+                        // 자동으로 첫 번째 메모 선택
+                        activeCode = memos[0].code;
+                        selectMemo(activeCode);
+                    }
+                });
         }
 
         function renderList() {
@@ -454,22 +561,22 @@
                 // Enable drag-and-drop
                 li.setAttribute('draggable', true);
                 // Highlight potential drop target
-                li.addEventListener('dragenter', function(e) {
+                li.addEventListener('dragenter', function (e) {
                     if (this.dataset.code !== draggedCode) {
                         this.classList.add('drag-over');
                     }
                 });
-                li.addEventListener('dragleave', function(e) {
+                li.addEventListener('dragleave', function (e) {
                     this.classList.remove('drag-over');
                 });
                 li.dataset.code = m.code;
-                li.addEventListener('dragstart', function(e) {
+                li.addEventListener('dragstart', function (e) {
                     draggedCode = this.dataset.code;
                 });
-                li.addEventListener('dragover', function(e) {
+                li.addEventListener('dragover', function (e) {
                     e.preventDefault();
                 });
-                li.addEventListener('drop', function(e) {
+                li.addEventListener('drop', function (e) {
                     // Remove highlight from all items
                     document.querySelectorAll('.memo-list li.drag-over').forEach(el => el.classList.remove('drag-over'));
                     e.preventDefault();
@@ -502,6 +609,7 @@
             const memo = memos.find(m => m.code === code);
             if (memo) {
                 memoDetail.classList.remove('hidden');
+                inviteBtn.classList.remove('hidden');
                 memoTitle.disabled = false;
                 memoContent.contentEditable = 'true';
                 memoTitle.value = memo.title;
@@ -519,6 +627,7 @@
                 memoTitle.disabled = true;
                 memoContent.contentEditable = 'false';
                 memoDetail.classList.add('hidden');
+                inviteBtn.classList.add('hidden');
             }
         }
 
@@ -551,7 +660,11 @@
         });
 
         function updateContent() {
+            const currentMemo = memos.find(m => m.code === activeCode);
             const newContent = memoContent.innerHTML;
+            if (currentMemo && currentMemo.content === newContent) {
+                return; // 변경사항 없으면 API 호출하지 않음
+            }
             if (newContent === undefined) return;
             fetch('/note/' + activeCode + '/content', {
                 method: 'PUT',
@@ -561,8 +674,12 @@
         }
 
         function updateTitle() {
+            const currentMemo = memos.find(m => m.code === activeCode);
             let newTitle = memoTitle.value.trim();
             if (!newTitle) newTitle = '제목없음';
+            if (currentMemo && currentMemo.title === newTitle) {
+                return; // 변경사항 없으면 API 호출하지 않음
+            }
             fetch('/note/' + activeCode + '/title', {
                 method: 'PUT',
                 headers: {'Content-Type': 'text/plain'},
@@ -571,28 +688,32 @@
         }
 
         addBtn.addEventListener('click', () => {
+            addBtn.disabled = true;
             const input = codeInput.value.trim();
             const endpoint = input
                 ? `/note/${encodeURIComponent(input)}`
                 : '/note';
 
-            fetch(endpoint, { method: 'POST' })
+            fetch(endpoint, {method: 'POST'})
                 .then(res => res.json())
                 .then(note => {
-                    // New memo goes to the top of the list
-                    noteCodeObjs.unshift({ code: note.code });
+                    noteCodeObjs.unshift({code: note.code});
                     localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
-                    // Update codes array to include the new top-priority code
                     codes = noteCodeObjs.map(o => o.code);
                     activeCode = note.code;
                     codeInput.value = '';
                     fetchMemos();
+                })
+                .catch(error => {
+                    console.error(error);
+                })
+                .finally(() => {
+                    addBtn.disabled = false;
                 });
         });
 
         fetchMemos();
         // Invite dialog logic
-        const inviteBtn = document.getElementById('inviteBtn');
         const inviteModal = document.getElementById('inviteModal');
         const inviteOverlay = inviteModal.querySelector('.invite-overlay');
         const inviteClose = document.getElementById('inviteClose');
@@ -602,8 +723,13 @@
 
         function openInvite() {
             if (!activeCode) return;
+            const qrSpinner = document.getElementById('qrSpinner');
+            qrSpinner.classList.remove('hidden');
+
             inviteCodeElem.textContent = activeCode;
             const url = `https://note.hshim-universe.com/page/note/invite?code=${encodeURIComponent(activeCode)}`;
+
+            inviteQR.onload = () => qrSpinner.classList.add('hidden');
             inviteQR.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
             inviteModal.classList.remove('hidden');
         }
@@ -621,27 +747,29 @@
         inviteCodeElem.addEventListener('mousedown', () => {
             pressTimer = setTimeout(() => {
                 navigator.clipboard.writeText(activeCode || '');
+                showNotification('복사되었습니다.');
             }, 600);
         });
         ['mouseup', 'mouseleave'].forEach(evt =>
             inviteCodeElem.addEventListener(evt, () => clearTimeout(pressTimer))
         );
-
         // Copy link button
         inviteCopyLink.addEventListener('click', () => {
             const url = `https://note.hshim-universe.com/page/note/invite?code=${encodeURIComponent(activeCode)}`;
             navigator.clipboard.writeText(url);
+            showNotification('복사되었습니다.');
         });
     });
 </script>
-    <div id="inviteModal" class="invite-modal hidden">
-      <div class="invite-overlay"></div>
-      <div class="invite-dialog">
+<div id="inviteModal" class="invite-modal hidden">
+    <div class="invite-overlay"></div>
+    <div class="invite-dialog">
         <button id="inviteClose" class="invite-close">×</button>
         <div id="inviteCode" class="invite-code"></div>
         <img id="inviteQR" class="invite-qr" src="" alt="QR Code"/>
+        <div id="qrSpinner" class="spinner hidden"></div>
         <button id="inviteCopyLink" class="invite-copy-link">📄</button>
-      </div>
     </div>
+</div>
 </body>
 </html>
