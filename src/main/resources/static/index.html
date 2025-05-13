@@ -184,6 +184,11 @@
             color: #fff;
         }
 
+        /* Highlight the list item where the dragged memo will be inserted */
+        .memo-list li.drag-over {
+            border-top: 2px solid #007BFF;
+        }
+
         .content {
             flex: 1;
             position: relative;
@@ -208,9 +213,86 @@
             padding: 10px;
             border-radius: 4px;
         }
+        /* .memo-content-wrapper removed */
+        .memo-dates {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 10px;
+            color: var(--sidebar-text);
+        }
 
         .no-memo {
             color: #555;
+        }
+        .hidden {
+            display: none;
+        }
+        .no-memo.hidden {
+            display: none;
+        }
+        /* Invite modal overlay and dialog */
+        .invite-modal.hidden {
+            display: none;
+        }
+        .invite-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .invite-modal .invite-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .invite-modal .invite-dialog {
+            position: relative;
+            background-color: var(--content-bg);
+            color: var(--content-text);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .invite-modal .invite-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: var(--content-text);
+        }
+        .invite-modal .invite-code {
+            font-size: 20px;
+            margin-bottom: 15px;
+            user-select: none;
+        }
+        .invite-modal .invite-qr {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 15px;
+        }
+        .invite-modal .invite-copy-link {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--content-text);
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -225,12 +307,15 @@
         <div class="sidebar-header">
             <input id="codeInput"
                    type="text"
-                   placeholder="코드 입력 또는 빈칸"
+                   placeholder="코드 입력 (빈칸 시 랜덤)"
                    autocomplete="off"
                    style="flex:1; margin: 0 5px; padding:5px; border:1px solid #555; border-radius:3px; background-color: var(--sidebar-bg); color: var(--sidebar-text);"/>
             <button id="addBtn" class="add-btn">+</button>
         </div>
         <ul id="memoList" class="memo-list"></ul>
+        <div class="sidebar-footer" style="margin-top: auto; padding: 5px 10px; text-align: left; font-size: 12px; color: var(--sidebar-text);">
+            <span id="resetTxt" style="cursor: pointer; user-select: none;">초기화</span>
+        </div>
     </div>
     <div class="content">
         <div id="memoDetail" class="memo-detail hidden">
@@ -245,6 +330,16 @@
                  autocorrect="off"
                  autocapitalize="off"
                  autocomplete="off"></div>
+            <div id="memoDates" class="memo-dates">
+                <small>생성 | <span id="createDate"></span> <br> 수정 | <span id="updateDate"></span></small>
+            </div>
+        </div>
+        <span id="inviteBtn"
+              style="position:absolute; bottom:10px; left:10px; font-size:14px; cursor:pointer; color: var(--content-text);">
+          초대
+        </span>
+        <div id="noMemo" class="no-memo hidden" style="text-align:center; color: var(--sidebar-text); margin-top:20px;">
+            메모 없음
         </div>
     </div>
 </div>
@@ -266,8 +361,22 @@
             sidebar.classList.toggle('open');
         });
 
+        // Close sidebar when content area is clicked (useful on small screens)
+        const contentArea = document.querySelector('.content');
+        contentArea.addEventListener('click', () => {
+            if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        // For drag-and-drop reordering
+        let draggedCode = null;
+        // Load stored note code objects and derive codes array
         const clientIdKey = 'clientId';
         const noteCodesKey = 'noteCodes';
+        const noteCodeObjsKey = noteCodesKey;
+        let noteCodeObjs = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
+
         let clientId = localStorage.getItem(clientIdKey);
         const notification = document.getElementById('notification');
         if (!clientId) {
@@ -283,10 +392,29 @@
         const memoDetail = document.getElementById('memoDetail');
         const memoTitle = document.getElementById('memoTitle');
         const memoContent = document.getElementById('memoContent');
+        const createDateElem = document.getElementById('createDate');
+        const updateDateElem = document.getElementById('updateDate');
         const addBtn = document.getElementById('addBtn');
         const codeInput = document.getElementById('codeInput');
+        const resetTxt = document.getElementById('resetTxt');
+        const noMemoElem = document.getElementById('noMemo');
+        // Reset noteCodes in localStorage via small text
+        resetTxt.addEventListener('click', () => {
+            if (confirm('초기화 하시겠습니까?')) {
+                localStorage.removeItem(noteCodesKey);
+                location.reload();
+            }
+        });
 
-        let codes = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
+        // Add new memo when pressing Enter in the code input field
+        codeInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addBtn.click();
+            }
+        });
+
+        let codes = noteCodeObjs.map(o => o.code);
         let memos = [];
         let activeCode = null;
 
@@ -295,8 +423,19 @@
                 fetch('/note/list?' + codes.map(c => 'codes=' + encodeURIComponent(c)).join('&'))
                     .then(res => res.json())
                     .then(data => {
-                        memos = data;
+                        // Order memos according to stored codes sequence
+                        const fetched = data;
+                        memos = codes.map(c => fetched.find(m => m.code === c)).filter(m => m);
                         renderList();
+                        if (memos.length === 0) {
+                            memoDetail.classList.add('hidden');
+                            inviteBtn.classList.add('hidden');
+                            noMemoElem.classList.remove('hidden');
+                            return;
+                        } else {
+                            noMemoElem.classList.add('hidden');
+                            inviteBtn.classList.remove('hidden');
+                        }
                         const codeToSelect = activeCode && memos.some(m => m.code === activeCode)
                             ? activeCode
                             : memos[0]?.code;
@@ -312,7 +451,36 @@
             memos.forEach(m => {
                 const li = document.createElement('li');
                 li.textContent = m.title || '(제목없음)';
+                // Enable drag-and-drop
+                li.setAttribute('draggable', true);
+                // Highlight potential drop target
+                li.addEventListener('dragenter', function(e) {
+                    if (this.dataset.code !== draggedCode) {
+                        this.classList.add('drag-over');
+                    }
+                });
+                li.addEventListener('dragleave', function(e) {
+                    this.classList.remove('drag-over');
+                });
                 li.dataset.code = m.code;
+                li.addEventListener('dragstart', function(e) {
+                    draggedCode = this.dataset.code;
+                });
+                li.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                });
+                li.addEventListener('drop', function(e) {
+                    // Remove highlight from all items
+                    document.querySelectorAll('.memo-list li.drag-over').forEach(el => el.classList.remove('drag-over'));
+                    e.preventDefault();
+                    const targetCode = this.dataset.code;
+                    const from = noteCodeObjs.findIndex(o => o.code === draggedCode);
+                    const to = noteCodeObjs.findIndex(o => o.code === targetCode);
+                    noteCodeObjs.splice(to, 0, noteCodeObjs.splice(from, 1)[0]);
+                    localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+                    codes = noteCodeObjs.map(o => o.code);
+                    fetchMemos();
+                });
                 li.addEventListener('click', () => selectMemo(m.code));
                 if (m.code === activeCode) li.classList.add('active');
                 const delBtn = document.createElement('span');
@@ -320,8 +488,8 @@
                 delBtn.classList.add('delete-btn');
                 delBtn.addEventListener('click', e => {
                     e.stopPropagation();
-                    codes = codes.filter(c => c !== m.code);
-                    localStorage.setItem(noteCodesKey, JSON.stringify(codes));
+                    noteCodeObjs = noteCodeObjs.filter(o => o.code !== m.code);
+                    localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
                     window.location.reload();
                 });
                 li.appendChild(delBtn);
@@ -337,7 +505,15 @@
                 memoTitle.disabled = false;
                 memoContent.contentEditable = 'true';
                 memoTitle.value = memo.title;
-                memoContent.textContent = memo.content;
+                memoContent.innerHTML = memo.content || '';
+                if (createDateElem) {
+                    const created = new Date(memo.createDate);
+                    createDateElem.textContent = created.toLocaleString('ko-KR');
+                }
+                if (updateDateElem) {
+                    const updated = new Date(memo.updateDate);
+                    updateDateElem.textContent = updated.toLocaleString('ko-KR');
+                }
                 updateActiveList();
             } else {
                 memoTitle.disabled = true;
@@ -375,8 +551,8 @@
         });
 
         function updateContent() {
-            const newContent = memoContent.textContent.trim();
-            if (!newContent) return;
+            const newContent = memoContent.innerHTML;
+            if (newContent === undefined) return;
             fetch('/note/' + activeCode + '/content', {
                 method: 'PUT',
                 headers: {'Content-Type': 'text/plain'},
@@ -396,18 +572,76 @@
 
         addBtn.addEventListener('click', () => {
             const input = codeInput.value.trim();
-            const newCode = input || crypto.randomUUID();
-            fetch('/note/' + newCode, {method: 'POST'})
+            const endpoint = input
+                ? `/note/${encodeURIComponent(input)}`
+                : '/note';
+
+            fetch(endpoint, { method: 'POST' })
                 .then(res => res.json())
                 .then(note => {
-                    codes.push(note.code);
-                    localStorage.setItem(noteCodesKey, JSON.stringify(codes));
+                    // New memo goes to the top of the list
+                    noteCodeObjs.unshift({ code: note.code });
+                    localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+                    // Update codes array to include the new top-priority code
+                    codes = noteCodeObjs.map(o => o.code);
+                    activeCode = note.code;
+                    codeInput.value = '';
                     fetchMemos();
                 });
         });
 
         fetchMemos();
+        // Invite dialog logic
+        const inviteBtn = document.getElementById('inviteBtn');
+        const inviteModal = document.getElementById('inviteModal');
+        const inviteOverlay = inviteModal.querySelector('.invite-overlay');
+        const inviteClose = document.getElementById('inviteClose');
+        const inviteCodeElem = document.getElementById('inviteCode');
+        const inviteQR = document.getElementById('inviteQR');
+        const inviteCopyLink = document.getElementById('inviteCopyLink');
+
+        function openInvite() {
+            if (!activeCode) return;
+            inviteCodeElem.textContent = activeCode;
+            const url = `https://note.hshim-universe.com/page/note/invite?code=${encodeURIComponent(activeCode)}`;
+            inviteQR.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
+            inviteModal.classList.remove('hidden');
+        }
+
+        function closeInvite() {
+            inviteModal.classList.add('hidden');
+        }
+
+        inviteBtn.addEventListener('click', openInvite);
+        inviteClose.addEventListener('click', closeInvite);
+        inviteOverlay.addEventListener('click', closeInvite);
+
+        // Long-press to copy code
+        let pressTimer;
+        inviteCodeElem.addEventListener('mousedown', () => {
+            pressTimer = setTimeout(() => {
+                navigator.clipboard.writeText(activeCode || '');
+            }, 600);
+        });
+        ['mouseup', 'mouseleave'].forEach(evt =>
+            inviteCodeElem.addEventListener(evt, () => clearTimeout(pressTimer))
+        );
+
+        // Copy link button
+        inviteCopyLink.addEventListener('click', () => {
+            const url = `https://note.hshim-universe.com/page/note/invite?code=${encodeURIComponent(activeCode)}`;
+            navigator.clipboard.writeText(url);
+        });
     });
 </script>
+    <div id="inviteModal" class="invite-modal hidden">
+      <div class="invite-overlay"></div>
+      <div class="invite-dialog">
+        <button id="inviteClose" class="invite-close">×</button>
+        <div id="inviteCode" class="invite-code"></div>
+        <img id="inviteQR" class="invite-qr" src="" alt="QR Code"/>
+        <button id="inviteCopyLink" class="invite-copy-link">📄</button>
+      </div>
+    </div>
 </body>
 </html>

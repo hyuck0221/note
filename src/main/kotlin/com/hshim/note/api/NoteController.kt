@@ -11,6 +11,11 @@ class NoteController(
     private val noteQueryService: NoteQueryService,
     private val noteCommandService: NoteCommandService,
 ) {
+    @PostMapping
+    fun init(): NoteResponse {
+        return noteCommandService.init(null)
+    }
+
     @PostMapping("/{code}")
     fun init(@PathVariable code: String): NoteResponse {
         return noteCommandService.init(code)

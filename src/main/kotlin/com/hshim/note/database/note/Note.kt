@@ -21,8 +21,8 @@ class Note(
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     var content: String,
 ) : BaseTimeEntity() {
-    constructor(code: String?) : this(
-        code = code ?: UUID.randomUUID().toString(),
+    constructor(code: String) : this(
+        code = code,
         title = "제목없음",
         content = "",
     )

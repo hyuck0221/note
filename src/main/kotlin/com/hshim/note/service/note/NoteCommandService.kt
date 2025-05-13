@@ -10,8 +10,24 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional
 @Service
 class NoteCommandService(private val noteRepository: NoteRepository) {
-    fun init(code: String): NoteResponse {
-        val note = noteRepository.findByIdOrNull(code) ?: noteRepository.save(Note(code))
+
+    private val CODE_CHARS: List<Char> = ('A'..'Z') + ('0'..'9')
+    private val CODE_LENGTH = 8
+
+    private fun generateRandomCode(): String =
+        (1..CODE_LENGTH)
+            .map { CODE_CHARS.random() }
+            .joinToString("")
+
+    fun init(code: String?): NoteResponse {
+        var note = code?.let { noteRepository.findByIdOrNull(it) }
+        if (note == null) {
+            var code = code ?: generateRandomCode()
+            while (noteRepository.existsById(code)) {
+                code = generateRandomCode()
+            }
+            note = noteRepository.save(Note(code))
+        }
         return NoteResponse(note)
     }
 
