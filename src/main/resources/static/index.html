@@ -6,19 +6,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>온라인 메모장</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --sidebar-bg: #f5f5f5;
+            --sidebar-text: #333333;
+            --content-bg: #ffffff;
+            --content-text: #000000;
+        }
+
+        body.dark-mode {
+            --bg-color: #121212;
+            --text-color: #eee;
+            --sidebar-bg: #1e1e1e;
+            --sidebar-text: #ddd;
+            --content-bg: #1e1e1e;
+            --content-text: #eee;
         }
 
         body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
             font-family: 'Helvetica Neue', Arial, sans-serif;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            background-color: #121212;
-            color: #eee;
+        }
+
+        .sidebar {
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+        }
+
+        .content {
+            background-color: var(--content-bg);
+            color: var(--content-text);
+        }
+
+        .memo-title,
+        .memo-content {
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+        }
+
+        .delete-btn {
+            display: none;
+        }
+
+        .memo-list li:hover .delete-btn {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                left: -250px;
+                top: 0;
+                bottom: 0;
+                width: 250px;
+                transition: left 0.3s ease;
+                z-index: 1000;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .app {
+                position: relative;
+            }
+        }
+
+        /* 화면이 넓을 때 토글 버튼 숨기기 */
+        @media (min-width: 769px) {
+            #toggleSidebar {
+                display: none;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         .notification {
@@ -39,14 +108,29 @@
             opacity: 1;
         }
 
-        .app {
-            flex: 1;
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background-color: var(--sidebar-bg);
             display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            z-index: 1001;
+        }
+
+        .app {
+            margin-top: 50px;
+            display: flex;
+            flex: 1;
         }
 
         .sidebar {
             width: 250px;
-            background-color: #1e1e1e;
+            background-color: var(--sidebar-bg);
             border-right: 1px solid #333;
             display: flex;
             flex-direction: column;
@@ -64,43 +148,7 @@
             background: none;
             border: none;
             cursor: pointer;
-            color: #eee;
-        }
-
-        .add-box {
-            margin-left: 10px;
-        }
-
-        .add-box.hidden {
-            display: none;
-        }
-
-        .add-box input {
-            padding: 5px;
-            width: 100px;
-            border: 1px solid #555;
-            border-radius: 3px;
-            background-color: #2a2a2a;
-            color: #eee;
-        }
-
-        .add-box input::placeholder {
-            color: #777;
-        }
-
-        .register-btn {
-            margin-left: 5px;
-            padding: 5px 10px;
-            font-size: 14px;
-            background-color: #2a2a2a;
-            color: #eee;
-            border: 1px solid #555;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-
-        .register-btn:hover {
-            background-color: #3a3a3a;
+            color: var(--sidebar-text);
         }
 
         .memo-list {
@@ -113,9 +161,10 @@
             padding: 10px;
             cursor: pointer;
             border-bottom: 1px solid #2a2a2a;
-            color: #ddd;
+            color: var(--sidebar-text);
             position: relative;
         }
+
         .delete-btn {
             position: absolute;
             right: 10px;
@@ -125,6 +174,7 @@
             color: #888;
             cursor: pointer;
         }
+
         .delete-btn:hover {
             color: #f55;
         }
@@ -138,13 +188,6 @@
             flex: 1;
             position: relative;
             padding: 20px;
-            background-color: #1e1e1e;
-        }
-
-        .memo-title, .memo-content {
-            background-color: #2a2a2a;
-            color: #eee;
-            border-radius: 4px;
         }
 
         .memo-title {
@@ -154,12 +197,7 @@
             outline: none;
             margin-bottom: 10px;
             padding: 10px;
-        }
-
-        .memo-detail {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
+            border-radius: 4px;
         }
 
         .memo-content {
@@ -168,6 +206,7 @@
             overflow-y: auto;
             outline: none;
             padding: 10px;
+            border-radius: 4px;
         }
 
         .no-memo {
@@ -177,26 +216,56 @@
 </head>
 <body>
 <div id="notification" class="notification">최초 접속으로 확인되었습니다</div>
+<div class="topbar">
+    <button id="toggleSidebar" class="add-btn">☰</button>
+    <button id="themeToggle" class="add-btn">🌓</button>
+</div>
 <div class="app">
     <div class="sidebar">
         <div class="sidebar-header">
+            <input id="codeInput"
+                   type="text"
+                   placeholder="코드 입력 또는 빈칸"
+                   autocomplete="off"
+                   style="flex:1; margin: 0 5px; padding:5px; border:1px solid #555; border-radius:3px; background-color: var(--sidebar-bg); color: var(--sidebar-text);"/>
             <button id="addBtn" class="add-btn">+</button>
-            <div id="addBox" class="add-box hidden">
-                <input id="codeInput" type="text" placeholder="코드 입력 또는 빈칸"/>
-                <button id="registerBtn" class="register-btn">등록</button>
-            </div>
         </div>
         <ul id="memoList" class="memo-list"></ul>
     </div>
     <div class="content">
         <div id="memoDetail" class="memo-detail hidden">
-            <input id="memoTitle" class="memo-title" type="text"/>
-            <div id="memoContent" class="memo-content" contenteditable="true"></div>
+            <input id="memoTitle"
+                   class="memo-title"
+                   type="text"
+                   autocomplete="off"/>
+            <div id="memoContent"
+                 class="memo-content"
+                 contenteditable="true"
+                 spellcheck="false"
+                 autocorrect="off"
+                 autocapitalize="off"
+                 autocomplete="off"></div>
         </div>
     </div>
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const themeToggle = document.getElementById('themeToggle');
+        const storedTheme = localStorage.getItem('theme') || 'dark-mode';
+        document.body.classList.add(storedTheme);
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            document.body.classList.toggle('light-mode');
+            const newTheme = document.body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode';
+            localStorage.setItem('theme', newTheme);
+        });
+
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        const sidebar = document.querySelector('.sidebar');
+        toggleSidebar.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+
         const clientIdKey = 'clientId';
         const noteCodesKey = 'noteCodes';
         let clientId = localStorage.getItem(clientIdKey);
@@ -215,9 +284,7 @@
         const memoTitle = document.getElementById('memoTitle');
         const memoContent = document.getElementById('memoContent');
         const addBtn = document.getElementById('addBtn');
-        const addBox = document.getElementById('addBox');
         const codeInput = document.getElementById('codeInput');
-        const registerBtn = document.getElementById('registerBtn');
 
         let codes = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
         let memos = [];
@@ -230,7 +297,10 @@
                     .then(data => {
                         memos = data;
                         renderList();
-                        selectMemo(memos[0].code);
+                        const codeToSelect = activeCode && memos.some(m => m.code === activeCode)
+                            ? activeCode
+                            : memos[0]?.code;
+                        if (codeToSelect) selectMemo(codeToSelect);
                     });
             } else {
                 memoDetail.classList.add('hidden');
@@ -245,7 +315,6 @@
                 li.dataset.code = m.code;
                 li.addEventListener('click', () => selectMemo(m.code));
                 if (m.code === activeCode) li.classList.add('active');
-
                 const delBtn = document.createElement('span');
                 delBtn.textContent = 'x';
                 delBtn.classList.add('delete-btn');
@@ -256,7 +325,6 @@
                     window.location.reload();
                 });
                 li.appendChild(delBtn);
-
                 sidebarList.appendChild(li);
             });
         }
@@ -283,7 +351,6 @@
                 li.classList.toggle('active', li.dataset.code === activeCode);
             });
         }
-
 
         memoTitle.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
@@ -324,31 +391,10 @@
                 method: 'PUT',
                 headers: {'Content-Type': 'text/plain'},
                 body: newTitle
-            }).then(() => {
-                fetchMemos();
-            });
+            }).then(() => fetchMemos());
         }
 
         addBtn.addEventListener('click', () => {
-            addBox.classList.toggle('hidden');
-            if (!addBox.classList.contains('hidden')) codeInput.focus();
-        });
-
-        codeInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                const input = codeInput.value.trim();
-                const newCode = input || crypto.randomUUID();
-                fetch('/note/' + newCode, {method: 'POST'})
-                    .then(res => res.json())
-                    .then(note => {
-                        codes.push(note.code);
-                        localStorage.setItem(noteCodesKey, JSON.stringify(codes));
-                        window.location.reload();
-                    });
-            }
-        });
-
-        registerBtn.addEventListener('click', () => {
             const input = codeInput.value.trim();
             const newCode = input || crypto.randomUUID();
             fetch('/note/' + newCode, {method: 'POST'})
@@ -356,7 +402,7 @@
                 .then(note => {
                     codes.push(note.code);
                     localStorage.setItem(noteCodesKey, JSON.stringify(codes));
-                    window.location.reload();
+                    fetchMemos();
                 });
         });
 
