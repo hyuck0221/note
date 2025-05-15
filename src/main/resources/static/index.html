@@ -75,13 +75,6 @@
             overflow-y: auto;
         }
 
-        .delete-btn {
-            display: none;
-        }
-
-        .memo-list li:hover .delete-btn {
-            display: block;
-        }
 
         @media (max-width: 768px) {
             .sidebar {
@@ -302,6 +295,46 @@
             align-items: center;
         }
 
+        /* Always-visible menu button for each memo */
+        .menu-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* Context menu for memo list items with show/hide animation */
+        .item-menu {
+            position: absolute;
+            background-color: var(--content-bg);
+            color: var(--content-text);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+        }
+        .item-menu:not(.hidden) {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .item-menu .option {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .item-menu .option:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+        .item-menu .delete-option {
+            color: #f55;
+        }
+
         .invite-modal .invite-close {
             position: absolute;
             top: 10px;
@@ -407,17 +440,15 @@
                 <small>생성 | <span id="createDate"></span> <br> 수정 | <span id="updateDate"></span></small>
             </div>
         </div>
-        <span id="inviteBtn"
-              style="position:absolute; bottom:10px; left:10px; font-size:14px; cursor:pointer; color: var(--content-text);">
-          초대
-        </span>
         <div id="noMemo" class="no-memo hidden" style="text-align:center; color: var(--sidebar-text); margin-top:20px;">
             메모 없음
         </div>
     </div>
 </div>
 <script>
+    var currentMenuCode = null;
     document.addEventListener('DOMContentLoaded', () => {
+        currentMenuCode = null;
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
         function updateThemeIcon() {
@@ -491,7 +522,6 @@
         const codeInput = document.getElementById('codeInput');
         const resetTxt = document.getElementById('resetTxt');
         const noMemoElem = document.getElementById('noMemo');
-        const inviteBtn = document.getElementById('inviteBtn');
         // Reset noteCodes in localStorage via small text
         resetTxt.addEventListener('click', () => {
             if (confirm('초기화 하시겠습니까?')) {
@@ -512,7 +542,6 @@
         let activeCode = null;
         if (codes.length === 0) {
             memoDetail.classList.add('hidden');
-            inviteBtn.classList.add('hidden');
             noMemoElem.classList.remove('hidden');
         }
 
@@ -520,7 +549,6 @@
             // If there are no saved codes, hide detail and invite, show “no memo” and skip fetching
             if (codes.length === 0) {
                 memoDetail.classList.add('hidden');
-                inviteBtn.classList.add('hidden');
                 noMemoElem.classList.remove('hidden');
                 return;
             }
@@ -528,6 +556,14 @@
             fetch('/note/list?' + codes.map(c => 'codes=' + encodeURIComponent(c)).join('&'))
                 .then(res => res.json())
                 .then(data => {
+                    // Remove any stored codes that were not returned by the server
+                    const returnedCodes = data.map(m => m.code);
+                    const invalidCodes = codes.filter(c => !returnedCodes.includes(c));
+                    if (invalidCodes.length) {
+                        noteCodeObjs = noteCodeObjs.filter(o => returnedCodes.includes(o.code));
+                        localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+                        codes = noteCodeObjs.map(o => o.code);
+                    }
                     // Order memos according to stored codes sequence
                     const fetched = data;
                     memos = codes.map(c => fetched.find(m => m.code === c)).filter(m => m);
@@ -535,13 +571,11 @@
                     // If after fetch there are no memos, treat as no codes
                     if (memos.length === 0) {
                         memoDetail.classList.add('hidden');
-                        inviteBtn.classList.add('hidden');
                         noMemoElem.classList.remove('hidden');
                         return;
                     }
                     // Hide “no memo” and show invite button
                     noMemoElem.classList.add('hidden');
-                    inviteBtn.classList.remove('hidden');
                     // If a memo is selected, show detail; otherwise, select the first memo automatically if available
                     if (activeCode) {
                         selectMemo(activeCode);
@@ -590,16 +624,24 @@
                 });
                 li.addEventListener('click', () => selectMemo(m.code));
                 if (m.code === activeCode) li.classList.add('active');
-                const delBtn = document.createElement('span');
-                delBtn.textContent = 'x';
-                delBtn.classList.add('delete-btn');
-                delBtn.addEventListener('click', e => {
+                const menuBtn = document.createElement('span');
+                menuBtn.textContent = '⋮';
+                menuBtn.classList.add('menu-btn');
+                menuBtn.addEventListener('click', e => {
                     e.stopPropagation();
-                    noteCodeObjs = noteCodeObjs.filter(o => o.code !== m.code);
-                    localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
-                    window.location.reload();
+                    const menu = document.getElementById('itemMenu');
+                    if (currentMenuCode === m.code && !menu.classList.contains('hidden')) {
+                        menu.classList.add('hidden');
+                        currentMenuCode = null;
+                        return;
+                    }
+                    currentMenuCode = m.code;
+                    const rect = menuBtn.getBoundingClientRect();
+                    menu.style.top = rect.bottom + 'px';
+                    menu.style.left = rect.right + 'px';
+                    menu.classList.remove('hidden');
                 });
-                li.appendChild(delBtn);
+                li.appendChild(menuBtn);
                 sidebarList.appendChild(li);
             });
         }
@@ -609,7 +651,6 @@
             const memo = memos.find(m => m.code === code);
             if (memo) {
                 memoDetail.classList.remove('hidden');
-                inviteBtn.classList.remove('hidden');
                 memoTitle.disabled = false;
                 memoContent.contentEditable = 'true';
                 memoTitle.value = memo.title;
@@ -627,7 +668,6 @@
                 memoTitle.disabled = true;
                 memoContent.contentEditable = 'false';
                 memoDetail.classList.add('hidden');
-                inviteBtn.classList.add('hidden');
             }
         }
 
@@ -738,29 +778,56 @@
             inviteModal.classList.add('hidden');
         }
 
-        inviteBtn.addEventListener('click', openInvite);
         inviteClose.addEventListener('click', closeInvite);
         inviteOverlay.addEventListener('click', closeInvite);
 
-        // Long-press to copy code
-        let pressTimer;
-        inviteCodeElem.addEventListener('mousedown', () => {
-            pressTimer = setTimeout(() => {
-                navigator.clipboard.writeText(activeCode || '');
-                showNotification('복사되었습니다.');
-            }, 600);
-        });
-        ['mouseup', 'mouseleave'].forEach(evt =>
-            inviteCodeElem.addEventListener(evt, () => clearTimeout(pressTimer))
-        );
         // Copy link button
         inviteCopyLink.addEventListener('click', () => {
             const url = `https://note.hshim-universe.com/page/note/invite?code=${encodeURIComponent(activeCode)}`;
             navigator.clipboard.writeText(url);
-            showNotification('복사되었습니다.');
+            showNotification('링크가 복사되었습니다.');
+        });
+
+        // Click to copy invite code
+        inviteCodeElem.addEventListener('click', () => {
+            navigator.clipboard.writeText(activeCode || '');
+            showNotification('코드가 복사되었습니다.');
+        });
+
+        const itemMenu = document.getElementById('itemMenu');
+        const menuInvite = document.getElementById('menuInvite');
+        const menuDelete = document.getElementById('menuDelete');
+
+        // Hide menu when clicking outside
+        document.addEventListener('click', e => {
+            if (!itemMenu.contains(e.target) && !e.target.classList.contains('menu-btn')) {
+                itemMenu.classList.add('hidden');
+            }
+        });
+
+        menuInvite.addEventListener('click', () => {
+            if (currentMenuCode) {
+                selectMemo(currentMenuCode);
+                openInvite();
+            }
+            itemMenu.classList.add('hidden');
+        });
+
+        menuDelete.addEventListener('click', () => {
+            if (currentMenuCode) {
+                noteCodeObjs = noteCodeObjs.filter(o => o.code !== currentMenuCode);
+                localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+                codes = noteCodeObjs.map(o => o.code);
+                fetchMemos();
+            }
+            itemMenu.classList.add('hidden');
         });
     });
 </script>
+<div id="itemMenu" class="item-menu hidden">
+    <div id="menuInvite" class="option">초대</div>
+    <div id="menuDelete" class="option delete-option">삭제</div>
+</div>
 <div id="inviteModal" class="invite-modal hidden">
     <div class="invite-overlay"></div>
     <div class="invite-dialog">
@@ -768,7 +835,7 @@
         <div id="inviteCode" class="invite-code"></div>
         <img id="inviteQR" class="invite-qr" src="" alt="QR Code"/>
         <div id="qrSpinner" class="spinner hidden"></div>
-        <button id="inviteCopyLink" class="invite-copy-link">📄</button>
+        <button id="inviteCopyLink" class="invite-copy-link">📎</button>
     </div>
 </div>
 </body>
