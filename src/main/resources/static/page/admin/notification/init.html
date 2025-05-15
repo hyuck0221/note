@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>공지사항 등록</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+</head>
+<body>
+  <h1>공지사항 등록</h1>
+  <div style="margin-bottom: 10px;">
+    <label for="titleInput">제목</label><br/>
+    <input type="text" id="titleInput" style="width: 100%; padding: 5px;"/>
+  </div>
+  <div style="margin-bottom: 10px;">
+    <label for="contentInput">내용</label><br/>
+    <textarea id="contentInput" rows="10" style="width: 100%; padding: 5px;" placeholder="마크다운 문법으로 입력하세요"></textarea>
+  </div>
+  <button id="submitBtn" disabled style="padding: 10px 20px;">등록</button>
+  <script>
+    const titleInput = document.getElementById('titleInput');
+    const contentInput = document.getElementById('contentInput');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Initialize Markdown editor
+    const simplemde = new SimpleMDE({
+      element: contentInput,
+      spellChecker: false,
+      placeholder: '마크다운 문법으로 입력하세요'
+    });
+
+    function updateButtonState() {
+      submitBtn.disabled = !(titleInput.value.trim() && simplemde.value().trim());
+    }
+
+    titleInput.addEventListener('input', updateButtonState);
+    simplemde.codemirror.on('change', updateButtonState);
+
+    submitBtn.addEventListener('click', () => {
+      fetch('/notification', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          title: titleInput.value.trim(),
+          content: simplemde.value().trim()
+        })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('등록에 실패했습니다.');
+        return res.json();
+      })
+      .then(() => {
+        alert('등록이 완료되었습니다.');
+        titleInput.value = '';
+        simplemde.value('');   // reset markdown editor
+        updateButtonState();
+      })
+      .catch(err => {
+        alert(err.message);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -65,11 +65,13 @@
             color: var(--sidebar-text);
             border-radius: 12px;
         }
+
         #memoDetail {
             display: flex;
             flex-direction: column;
             height: 100%;
         }
+
         .memo-content {
             flex: 1;
             overflow-y: auto;
@@ -312,25 +314,29 @@
             color: var(--content-text);
             border: 1px solid #ccc;
             border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             z-index: 2000;
             opacity: 0;
             transform: translateY(-10px);
             transition: opacity 0.2s ease, transform 0.2s ease;
             pointer-events: none;
         }
+
         .item-menu:not(.hidden) {
             opacity: 1;
             transform: translateY(0);
             pointer-events: auto;
         }
+
         .item-menu .option {
             padding: 8px 12px;
             cursor: pointer;
         }
+
         .item-menu .option:hover {
-            background-color: rgba(0,0,0,0.05);
+            background-color: rgba(0, 0, 0, 0.05);
         }
+
         .item-menu .delete-option {
             color: #f55;
         }
@@ -388,23 +394,134 @@
 
         /* Theme icon and animation */
         .theme-icon {
-          display: inline-block;
-          font-size: 24px;
-          transition: transform 0.3s ease, opacity 0.3s ease;
-          opacity: 1;
+            display: inline-block;
+            font-size: 24px;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
         }
+
         .theme-icon.rotate {
-          transform: rotate(360deg);
-          opacity: 0;
+            transform: rotate(360deg);
+            opacity: 0;
+        }
+
+        /* Terms-of-Use modal styles */
+        .terms-modal.hidden {
+            display: none;
+        }
+
+        .terms-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .terms-modal.show {
+            opacity: 1;
+        }
+
+        .terms-dialog {
+            background-color: var(--content-bg);
+            color: var(--content-text);
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 80%;
+            animation: slideDown 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .terms-dialog h2 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .terms-content {
+            font-size: 16px;
+            text-align: left;
+            margin-bottom: 24px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .terms-confirm {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            align-self: center;
+        }
+
+        /* Light Mode Editor Overrides */
+        .toastui-editor-defaultUI {
+            background-color: #ffffff;
+            color: #1a1a1a;
+        }
+        .toastui-editor-defaultUI .toastui-editor-ww-editor .ProseMirror,
+        .toastui-editor-defaultUI .toastui-editor-md-container,
+        .toastui-editor-defaultUI .toastui-editor-md-input {
+            background-color: #ffffff !important;
+            color: #1a1a1a !important;
+        }
+        .toastui-editor-defaultUI .te-toolbar {
+            background-color: #e8eaed !important;
+            color: #2c2c2c !important;
+        }
+        .toastui-editor-defaultUI .te-toolbar button {
+            color: #2c2c2c !important;
+        }
+
+        /* Dark Mode Editor Overrides */
+        .toastui-editor-dark {
+            background-color: #1c1e1f;
+            color: #d3d6d8;
+        }
+        .toastui-editor-dark .toastui-editor-ww-editor .ProseMirror,
+        .toastui-editor-dark .toastui-editor-md-container,
+        .toastui-editor-dark .toastui-editor-md-input {
+            background-color: #1c1e1f !important;
+            color: #d3d6d8 !important;
+        }
+        .toastui-editor-dark .te-toolbar {
+            background-color: #242526 !important;
+            color: #b8babb !important;
+        }
+        .toastui-editor-dark .te-toolbar button {
+            color: #b8babb !important;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.css"/>
+    <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 </head>
 <body>
-<div id="notification" class="notification">최초 접속으로 확인되었습니다</div>
 <div class="topbar">
     <button id="toggleSidebar" class="add-btn">☰</button>
     <button id="themeToggle" class="add-btn">
-      <span id="themeIcon" class="theme-icon"></span>
+        <span id="themeIcon" class="theme-icon"></span>
     </button>
 </div>
 <div class="app">
@@ -429,13 +546,7 @@
                    class="memo-title"
                    type="text"
                    autocomplete="off"/>
-            <div id="memoContent"
-                 class="memo-content"
-                 contenteditable="true"
-                 spellcheck="false"
-                 autocorrect="off"
-                 autocapitalize="off"
-                 autocomplete="off"></div>
+            <div id="memoEditor" class="memo-editor" style="height: calc(100% - 60px);"></div>
             <div id="memoDates" class="memo-dates">
                 <small>생성 | <span id="createDate"></span> <br> 수정 | <span id="updateDate"></span></small>
             </div>
@@ -451,27 +562,77 @@
         currentMenuCode = null;
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
-        function updateThemeIcon() {
+
+        // Editor container reference and theme helper
+        const memoEditorContainer = document.getElementById('memoEditor');
+        function applyEditorThemeClass() {
           if (document.body.classList.contains('dark-mode')) {
-            themeIcon.textContent = '☀️';
+            memoEditorContainer.classList.add('toastui-editor-dark');
+            memoEditorContainer.classList.remove('toastui-editor-defaultUI');
           } else {
-            themeIcon.textContent = '🌙';
+            memoEditorContainer.classList.add('toastui-editor-defaultUI');
+            memoEditorContainer.classList.remove('toastui-editor-dark');
           }
         }
+
+        function updateThemeIcon() {
+            if (document.body.classList.contains('dark-mode')) {
+                themeIcon.textContent = '☀️';
+            } else {
+                themeIcon.textContent = '🌙';
+            }
+        }
+
         // Initialize icon
         const storedTheme = localStorage.getItem('theme') || 'dark-mode';
         document.body.classList.add(storedTheme);
         updateThemeIcon();
+        // Initialize WYSIWYG Markdown editor (Toast UI)
+        let memoEditor = new toastui.Editor({
+          el: document.getElementById('memoEditor'),
+          height: '100%',
+          initialEditType: 'wysiwyg',
+          previewStyle: 'vertical',
+          hideModeSwitch: true,
+          initialValue: '',
+          theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+        });
+        // Auto-save on editor blur
+        memoEditor.on('blur', updateContent);
+        // Auto-save on Ctrl+S / Cmd+S
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                updateContent();
+            }
+        });
+        // Apply initial editor theme class
+        applyEditorThemeClass();
         themeToggle.addEventListener('click', () => {
-          themeIcon.classList.add('rotate');
-          setTimeout(() => {
-            themeIcon.classList.remove('rotate');
-            document.body.classList.toggle('dark-mode');
-            document.body.classList.toggle('light-mode');
-            const newTheme = document.body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode';
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon();
-          }, 300);
+            themeIcon.classList.add('rotate');
+            setTimeout(() => {
+                themeIcon.classList.remove('rotate');
+                document.body.classList.toggle('dark-mode');
+                document.body.classList.toggle('light-mode');
+                const newTheme = document.body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode';
+                localStorage.setItem('theme', newTheme);
+                updateThemeIcon();
+                // Reinitialize editor to apply new theme immediately
+                const currentContent = memoEditor.getMarkdown();
+                memoEditor.destroy();
+                memoEditor = new toastui.Editor({
+                  el: document.getElementById('memoEditor'),
+                  height: '100%',
+                  initialEditType: 'wysiwyg',
+                  previewStyle: 'vertical',
+                  hideModeSwitch: true,
+                  initialValue: currentContent,
+                  theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+                });
+                memoEditor.on('blur', updateContent);
+                // Reapply editor container theme class
+                applyEditorThemeClass();
+            }, 300);
         });
 
         const toggleSidebar = document.getElementById('toggleSidebar');
@@ -497,25 +658,49 @@
         let noteCodeObjs = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
 
         let clientId = localStorage.getItem(clientIdKey);
-        const notification = document.getElementById('notification');
+
+        // Notification logic replaced by Terms-of-Use modal
         function showNotification(msg) {
-            notification.textContent = msg;
-            notification.classList.add('show');
-            setTimeout(() => notification.classList.remove('show'), 2000);
+            // No-op or implement as needed
         }
-        if (!clientId) {
+
+        const isInitial = !clientId;
+        if (isInitial) {
             clientId = crypto.randomUUID();
             localStorage.setItem(clientIdKey, clientId);
-            notification.classList.add('show');
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 5000);
+            fetch('/notification/terms-of-used')
+                .then(res => res.json())
+                .then(data => showTerms(data));
+        } else {
+            fetch('/notification')
+                .then(res => res.json())
+                .then(data => {
+                    const storedNumber = localStorage.getItem('notificationNumber');
+                    if (storedNumber !== String(data.number)) {
+                        showTerms(data);
+                    }
+                });
+        }
+
+        // Show the Terms-of-Use modal
+        function showTerms(data) {
+            const termsModal = document.getElementById('termsModal');
+            const termsTitle = document.getElementById('termsTitle');
+            const termsContent = document.getElementById('termsContent');
+            const termsConfirm = document.getElementById('termsConfirm');
+            termsTitle.textContent = data.title;
+            termsContent.innerHTML = marked.parse(data.content);
+            termsModal.classList.remove('hidden');
+            termsModal.classList.add('show');
+            termsConfirm.onclick = () => {
+                localStorage.setItem('notificationNumber', String(data.number));
+                location.reload();
+            };
         }
 
         const sidebarList = document.getElementById('memoList');
         const memoDetail = document.getElementById('memoDetail');
         const memoTitle = document.getElementById('memoTitle');
-        const memoContent = document.getElementById('memoContent');
         const createDateElem = document.getElementById('createDate');
         const updateDateElem = document.getElementById('updateDate');
         const addBtn = document.getElementById('addBtn');
@@ -652,9 +837,8 @@
             if (memo) {
                 memoDetail.classList.remove('hidden');
                 memoTitle.disabled = false;
-                memoContent.contentEditable = 'true';
                 memoTitle.value = memo.title;
-                memoContent.innerHTML = memo.content || '';
+                memoEditor.setMarkdown(memo.content || '');
                 if (createDateElem) {
                     const created = new Date(memo.createDate);
                     createDateElem.textContent = created.toLocaleString('ko-KR');
@@ -666,7 +850,6 @@
                 updateActiveList();
             } else {
                 memoTitle.disabled = true;
-                memoContent.contentEditable = 'false';
                 memoDetail.classList.add('hidden');
             }
         }
@@ -691,17 +874,11 @@
             }
         });
 
-        memoContent.addEventListener('blur', updateContent);
-        memoContent.addEventListener('keydown', e => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                updateContent();
-            }
-        });
+        // Remove old memoContent event listeners: now handled by SimpleMDE events and blur
 
         function updateContent() {
             const currentMemo = memos.find(m => m.code === activeCode);
-            const newContent = memoContent.innerHTML;
+            const newContent = memoEditor.getMarkdown();
             if (currentMemo && currentMemo.content === newContent) {
                 return; // 변경사항 없으면 API 호출하지 않음
             }
@@ -752,6 +929,7 @@
                 });
         });
 
+        // (Moved editor initialization above)
         fetchMemos();
         // Invite dialog logic
         const inviteModal = document.getElementById('inviteModal');
@@ -839,4 +1017,12 @@
     </div>
 </div>
 </body>
+<!-- Terms-of-Use Modal -->
+<div id="termsModal" class="terms-modal hidden">
+    <div class="terms-dialog">
+        <h2 id="termsTitle"></h2>
+        <div id="termsContent" class="terms-content"></div>
+        <button id="termsConfirm" class="terms-confirm">확인</button>
+    </div>
+</div>
 </html>
