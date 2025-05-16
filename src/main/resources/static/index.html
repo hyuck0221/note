@@ -8,6 +8,84 @@
     <meta name="supported-color-schemes" content="light"/>
     <title>온라인 메모장</title>
     <style>
+        /* Settings modal styling */
+        #settingsModal .invite-dialog {
+            width: 40%;
+            max-width: 400px;
+            padding: 20px;
+        }
+
+        /* Grid layout for settings items */
+        #settingsModal .setting-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            grid-gap: 20px 10px;
+            align-items: start;
+            margin-bottom: 20px;
+        }
+
+        #settingsModal .setting-item > div {
+            text-align: left;
+        }
+
+        /* Reset margins/padding in settings items */
+        #settingsModal .setting-item > div {
+            margin: 0;
+            padding: 0;
+        }
+
+        #settingsModal .setting-item label,
+        #settingsModal .setting-item .desc {
+            margin-left: 0;
+        }
+
+        #settingsModal .setting-item label {
+            font-weight: bold;
+        }
+
+        #settingsModal .setting-item .desc {
+            display: block;
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        #settingsModal .setting-item label input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+
+        /* Align controls to the right edge */
+        #settingsModal .setting-item > input,
+        #settingsModal .setting-item > select,
+        #settingsModal .setting-item > button {
+            justify-self: end;
+        }
+
+        /* Disabled state styling */
+        #settingsModal .setting-item input:disabled,
+        #settingsModal .setting-item select:disabled {
+            opacity: 0.5;
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+
+        #settingsModal .setting-item input[type="number"],
+        #settingsModal .setting-item select,
+        #settingsModal .setting-item button {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 4px 8px;
+            background-color: var(--content-bg);
+            color: var(--content-text);
+            font-size: 14px;
+        }
+
+        #settingsModal .setting-item button {
+            cursor: pointer;
+        }
+
         :root {
             --bg-color: #fefefe;
             --text-color: #333333;
@@ -38,6 +116,7 @@
             color: var(--text-color);
             font-family: 'Helvetica Neue', Arial, sans-serif;
             height: 100vh;
+            overflow-x: auto;
             display: flex;
             flex-direction: column;
         }
@@ -70,11 +149,36 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            position: relative;
+        }
+
+        /* Save notification */
+        .save-notif {
+            position: absolute;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .save-notif.show {
+            opacity: 1;
         }
 
         .memo-content {
             flex: 1;
             overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE10+ */
+            box-shadow: inset 0 -20px 20px -20px var(--content-bg);
+            position: relative; /* for overlay */
+        }
+        .memo-content::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Webkit */
         }
 
 
@@ -464,6 +568,31 @@
             margin-bottom: 24px;
             max-height: 300px;
             overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            box-shadow: inset 0 -20px 20px -20px var(--content-bg);
+            position: relative;
+        }
+        .terms-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .terms-content ul,
+        .terms-content ol {
+            margin-left: 20px;
+            padding-left: 0;
+        }
+
+        .terms-content li {
+            margin-bottom: 6px;
+        }
+
+        .terms-content code {
+            background: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 4px;
         }
 
         .terms-confirm {
@@ -479,16 +608,19 @@
             background-color: #ffffff;
             color: #1a1a1a;
         }
+
         .toastui-editor-defaultUI .toastui-editor-ww-editor .ProseMirror,
         .toastui-editor-defaultUI .toastui-editor-md-container,
         .toastui-editor-defaultUI .toastui-editor-md-input {
             background-color: #ffffff !important;
             color: #1a1a1a !important;
         }
+
         .toastui-editor-defaultUI .te-toolbar {
             background-color: #e8eaed !important;
             color: #2c2c2c !important;
         }
+
         .toastui-editor-defaultUI .te-toolbar button {
             color: #2c2c2c !important;
         }
@@ -498,24 +630,69 @@
             background-color: #1c1e1f;
             color: #d3d6d8;
         }
+
         .toastui-editor-dark .toastui-editor-ww-editor .ProseMirror,
         .toastui-editor-dark .toastui-editor-md-container,
         .toastui-editor-dark .toastui-editor-md-input {
             background-color: #1c1e1f !important;
             color: #d3d6d8 !important;
         }
+
         .toastui-editor-dark .te-toolbar {
             background-color: #242526 !important;
             color: #b8babb !important;
         }
+
         .toastui-editor-dark .te-toolbar button {
             color: #b8babb !important;
         }
+
+        /* Smooth transition for editor theme change */
+        .toastui-editor-defaultUI,
+        .toastui-editor-dark {
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        .toastui-editor-defaultUI .toastui-editor-ww-editor .ProseMirror,
+        .toastui-editor-dark .toastui-editor-ww-editor .ProseMirror,
+        .toastui-editor-defaultUI .toastui-editor-md-container,
+        .toastui-editor-dark .toastui-editor-md-container,
+        .toastui-editor-defaultUI .toastui-editor-md-input,
+        .toastui-editor-dark .toastui-editor-md-input,
+        .toastui-editor-defaultUI .te-toolbar,
+        .toastui-editor-dark .te-toolbar {
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.css"/>
     <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+    <style>
+        /* Wrap toolbar items on narrow widths */
+        .toastui-editor-defaultUI .te-toolbar,
+        .toastui-editor-dark .te-toolbar {
+            display: flex !important;
+            flex-wrap: wrap !important;
+        }
+
+        /* Smaller toolbar buttons */
+        .toastui-editor-defaultUI .te-toolbar button,
+        .toastui-editor-dark .te-toolbar button {
+            padding: 4px !important;
+            width: 32px !important;
+            height: 32px !important;
+            margin-bottom: 4px !important;
+        }
+
+        /* Smaller SVG icons */
+        .toastui-editor-defaultUI .te-toolbar button svg,
+        .toastui-editor-dark .te-toolbar button svg {
+            width: 16px !important;
+            height: 16px !important;
+        }
+    </style>
 </head>
 <body>
 <div class="topbar">
@@ -537,7 +714,7 @@
         <ul id="memoList" class="memo-list"></ul>
         <div class="sidebar-footer"
              style="margin-top: auto; padding: 5px 10px; text-align: left; font-size: 12px; color: var(--sidebar-text);">
-            <span id="resetTxt" style="cursor: pointer; user-select: none;">초기화</span>
+            <button id="settingsBtn" class="add-btn" style="font-size: 14px;">설정</button>
         </div>
     </div>
     <div class="content">
@@ -565,14 +742,18 @@
 
         // Editor container reference and theme helper
         const memoEditorContainer = document.getElementById('memoEditor');
+
         function applyEditorThemeClass() {
-          if (document.body.classList.contains('dark-mode')) {
-            memoEditorContainer.classList.add('toastui-editor-dark');
-            memoEditorContainer.classList.remove('toastui-editor-defaultUI');
-          } else {
-            memoEditorContainer.classList.add('toastui-editor-defaultUI');
-            memoEditorContainer.classList.remove('toastui-editor-dark');
-          }
+            // Find the editor root wrapper and toggle UI classes
+            const wrapper = memoEditorContainer.querySelector('.toastui-editor-defaultUI, .toastui-editor-dark');
+            if (!wrapper) return;
+            if (document.body.classList.contains('dark-mode')) {
+                wrapper.classList.add('toastui-editor-dark');
+                wrapper.classList.remove('toastui-editor-defaultUI');
+            } else {
+                wrapper.classList.add('toastui-editor-defaultUI');
+                wrapper.classList.remove('toastui-editor-dark');
+            }
         }
 
         function updateThemeIcon() {
@@ -589,16 +770,21 @@
         updateThemeIcon();
         // Initialize WYSIWYG Markdown editor (Toast UI)
         let memoEditor = new toastui.Editor({
-          el: document.getElementById('memoEditor'),
-          height: '100%',
-          initialEditType: 'wysiwyg',
-          previewStyle: 'vertical',
-          hideModeSwitch: true,
-          initialValue: '',
-          theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+            el: document.getElementById('memoEditor'),
+            height: '100%',
+            initialEditType: 'wysiwyg',
+            previewStyle: 'vertical',
+            toolbarItems: [
+                ['heading', 'bold', 'italic', 'strike'],
+                ['hr', 'quote'],
+                ['ul', 'ol', 'task', 'table'],
+                ['link', 'code', 'codeblock']
+            ],
+            hideModeSwitch: true,
+            initialValue: '',
+            theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
         });
-        // Auto-save on editor blur
-        memoEditor.on('blur', updateContent);
+        // Auto-save on Ctrl+S / Cmd+S
         // Auto-save on Ctrl+S / Cmd+S
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -617,20 +803,24 @@
                 const newTheme = document.body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode';
                 localStorage.setItem('theme', newTheme);
                 updateThemeIcon();
-                // Reinitialize editor to apply new theme immediately
+                // Reinitialize editor to apply new theme
                 const currentContent = memoEditor.getMarkdown();
                 memoEditor.destroy();
                 memoEditor = new toastui.Editor({
-                  el: document.getElementById('memoEditor'),
-                  height: '100%',
-                  initialEditType: 'wysiwyg',
-                  previewStyle: 'vertical',
-                  hideModeSwitch: true,
-                  initialValue: currentContent,
-                  theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+                    el: document.getElementById('memoEditor'),
+                    height: '100%',
+                    initialEditType: 'wysiwyg',
+                    previewStyle: 'vertical',
+                    toolbarItems: [
+                        ['heading', 'bold', 'italic', 'strike'],
+                        ['hr', 'quote'],
+                        ['ul', 'ol', 'task', 'table'],
+                        ['link', 'code', 'codeblock']
+                    ],
+                    hideModeSwitch: true,
+                    initialValue: currentContent,
+                    theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
                 });
-                memoEditor.on('blur', updateContent);
-                // Reapply editor container theme class
                 applyEditorThemeClass();
             }, 300);
         });
@@ -705,15 +895,103 @@
         const updateDateElem = document.getElementById('updateDate');
         const addBtn = document.getElementById('addBtn');
         const codeInput = document.getElementById('codeInput');
-        const resetTxt = document.getElementById('resetTxt');
         const noMemoElem = document.getElementById('noMemo');
-        // Reset noteCodes in localStorage via small text
-        resetTxt.addEventListener('click', () => {
-            if (confirm('초기화 하시겠습니까?')) {
-                localStorage.removeItem(noteCodesKey);
-                location.reload();
-            }
-        });
+        // Settings modal logic
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const settingsClose = settingsModal ? document.getElementById('settingsClose') : null;
+        const autoSaveEnable = settingsModal ? document.getElementById('autoSaveEnable') : null;
+        const autoSaveInput = settingsModal ? document.getElementById('autoSaveIntervalInput') : null;
+        const themeSelect = settingsModal ? document.getElementById('themeSelect') : null;
+        const resetListBtn = settingsModal ? document.getElementById('resetListBtn') : null;
+
+        if (settingsBtn) {
+            // Open/close settings modal
+            settingsBtn.addEventListener('click', () => {
+                // Initialize current values
+                const savedInterval = parseInt(localStorage.getItem('autoSaveInterval'));
+                if (!isNaN(savedInterval)) {
+                    autoSaveEnable.checked = true;
+                    autoSaveInput.disabled = false;
+                    autoSaveInput.value = savedInterval;
+                } else {
+                    autoSaveEnable.checked = false;
+                    autoSaveInput.disabled = true;
+                    autoSaveInput.value = '';
+                }
+                themeSelect.value = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+                settingsModal.classList.remove('hidden');
+            });
+            settingsClose.addEventListener('click', () => settingsModal.classList.add('hidden'));
+            settingsModal.querySelector('.invite-overlay').addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+            // Auto-save checkbox toggle
+            autoSaveEnable.addEventListener('change', e => {
+                if (e.target.checked) {
+                    autoSaveInput.disabled = false;
+                    const val = 60;
+                    autoSaveInput.value = val;
+                    localStorage.setItem('autoSaveInterval', val);
+                    setupAutoSave();
+                } else {
+                    autoSaveInput.disabled = true;
+                    localStorage.removeItem('autoSaveInterval');
+                    if (autoSaveTimerId !== null) {
+                        clearInterval(autoSaveTimerId);
+                        autoSaveTimerId = null;
+                    }
+                }
+            });
+            // Auto-save interval input
+            autoSaveInput.addEventListener('change', e => {
+                let v = parseInt(e.target.value);
+                if (isNaN(v) || v < 10) v = 10;
+                if (v > 240) v = 240;
+                e.target.value = v;
+                if (autoSaveEnable.checked) {
+                    localStorage.setItem('autoSaveInterval', v);
+                    setupAutoSave();
+                }
+            });
+
+            // Theme select
+            themeSelect.addEventListener('change', e => {
+                const val = e.target.value;
+                // Toggle body classes
+                document.body.classList.toggle('dark-mode', val === 'dark');
+                document.body.classList.toggle('light-mode', val === 'light');
+                // Persist theme
+                localStorage.setItem('theme', val === 'dark' ? 'dark-mode' : 'light-mode');
+                updateThemeIcon();
+                // Reinitialize editor to apply new theme
+                const currentContent = memoEditor.getMarkdown();
+                memoEditor.destroy();
+                memoEditor = new toastui.Editor({
+                    el: document.getElementById('memoEditor'),
+                    height: '100%',
+                    initialEditType: 'wysiwyg',
+                    previewStyle: 'vertical',
+                    toolbarItems: [
+                        ['heading', 'bold', 'italic', 'strike'],
+                        ['hr', 'quote'],
+                        ['ul', 'ol', 'task', 'table'],
+                        ['link', 'code', 'codeblock']
+                    ],
+                    hideModeSwitch: true,
+                    initialValue: currentContent,
+                    theme: val
+                });
+                applyEditorThemeClass();
+            });
+
+            // Reset list button
+            resetListBtn.addEventListener('click', () => {
+                if (confirm('정말 초기화 하시겠습니까?')) {
+                    localStorage.removeItem(noteCodesKey);
+                    location.reload();
+                }
+            });
+        }
 
         codeInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
@@ -877,6 +1155,7 @@
         // Remove old memoContent event listeners: now handled by SimpleMDE events and blur
 
         function updateContent() {
+            if (!activeCode) return; // 선택된 메모가 없으면 저장하지 않음
             const currentMemo = memos.find(m => m.code === activeCode);
             const newContent = memoEditor.getMarkdown();
             if (currentMemo && currentMemo.content === newContent) {
@@ -887,7 +1166,10 @@
                 method: 'PUT',
                 headers: {'Content-Type': 'text/plain'},
                 body: newContent
-            }).then(() => fetchMemos());
+            }).then(() => {
+                fetchMemos();
+                showSaveNotification('content');
+            });
         }
 
         function updateTitle() {
@@ -901,7 +1183,32 @@
                 method: 'PUT',
                 headers: {'Content-Type': 'text/plain'},
                 body: newTitle
-            }).then(() => fetchMemos());
+            }).then(() => {
+                fetchMemos();
+                showSaveNotification('title');
+            });
+        }
+
+        function showSaveNotification(type) {
+            let notif = document.createElement('div');
+            notif.className = 'save-notif';
+            notif.textContent = '저장되었습니다';
+            if (type === 'content') {
+                const container = document.querySelector('.content');
+                container.appendChild(notif);
+                notif.style.top = '5px';
+                notif.style.right = '5px';
+            } else if (type === 'title') {
+                const detail = document.getElementById('memoDetail');
+                detail.appendChild(notif);
+                notif.style.bottom = '5px';
+                notif.style.right = '5px';
+            }
+            // trigger show
+            setTimeout(() => notif.classList.add('show'), 10);
+            // hide and remove
+            setTimeout(() => notif.classList.remove('show'), 2010);
+            setTimeout(() => notif.remove(), 2300);
         }
 
         addBtn.addEventListener('click', () => {
@@ -931,6 +1238,24 @@
 
         // (Moved editor initialization above)
         fetchMemos();
+// Auto-save timer ID 관리
+        let autoSaveTimerId = null;
+
+        function setupAutoSave() {
+            if (autoSaveTimerId !== null) {
+                clearInterval(autoSaveTimerId);
+                autoSaveTimerId = null;
+            }
+            const savedInterval = parseInt(localStorage.getItem('autoSaveInterval'));
+            if (!isNaN(savedInterval) && savedInterval > 0) {
+                autoSaveTimerId = setInterval(() => {
+                    updateContent();
+                }, savedInterval * 1000);
+            }
+        }
+
+        // 페이지 로드 후 설정값이 있으면 자동저장 시작
+        setupAutoSave();
         // Invite dialog logic
         const inviteModal = document.getElementById('inviteModal');
         const inviteOverlay = inviteModal.querySelector('.invite-overlay');
@@ -1014,6 +1339,41 @@
         <img id="inviteQR" class="invite-qr" src="" alt="QR Code"/>
         <div id="qrSpinner" class="spinner hidden"></div>
         <button id="inviteCopyLink" class="invite-copy-link">📎</button>
+    </div>
+</div>
+<div id="settingsModal" class="invite-modal hidden">
+    <div class="invite-overlay"></div>
+    <div class="invite-dialog">
+        <button id="settingsClose" class="invite-close">×</button>
+        <h2 style="text-align:left; margin-bottom:20px;">설정</h2>
+        <!-- 자동저장 인터벌 -->
+        <div class="setting-item">
+            <div>
+                <label><input type="checkbox" id="autoSaveEnable"> 자동저장 (초)</label>
+                <small class="desc">메모 입력 중 자동저장될 시간을 설정합니다. (10~240)</small>
+            </div>
+            <input type="number" id="autoSaveIntervalInput" min="10" max="240" disabled style="width:60px;"/>
+        </div>
+        <!-- 테마 설정 -->
+        <div class="setting-item">
+            <div>
+                <label for="themeSelect">테마</label>
+                <small class="desc">웹페이지의 테마를 설정합니다.</small>
+            </div>
+            <select id="themeSelect">
+                <option value="light">화이트모드</option>
+                <option value="dark">다크모드</option>
+            </select>
+        </div>
+        <!-- 리스트 초기화 -->
+        <div class="setting-item">
+            <div>
+                <label>리스트 초기화</label>
+                <small class="desc">지금까지 등록한 메모를 리스트에서 제거합니다 <br> 메모 내용은 삭제되지 않고
+                    리스트에서만 제거됩니다.</small>
+            </div>
+            <button id="resetListBtn">삭제</button>
+        </div>
     </div>
 </div>
 </body>
