@@ -180,6 +180,18 @@
         .memo-content::-webkit-scrollbar {
             display: none; /* Chrome/Safari/Webkit */
         }
+        /* Limit editor height and enable internal scrolling */
+        .memo-editor {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: calc(100vh - 150px) !important;
+            max-height: calc(100vh - 150px);
+            overflow-y: auto;
+        }
+        /* Prevent body from scrolling vertically */
+        body {
+            overflow-y: hidden;
+        }
 
 
         @media (max-width: 768px) {
@@ -664,6 +676,14 @@
             transition: background-color 0.5s ease, color 0.5s ease;
         }
 
+        /* Allow editor container to shrink below its tool width */
+        .content,
+        .memo-editor,
+        .toastui-editor-defaultUI,
+        .toastui-editor-dark {
+            min-width: 0;
+        }
+
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
@@ -700,6 +720,7 @@
     <button id="themeToggle" class="add-btn">
         <span id="themeIcon" class="theme-icon"></span>
     </button>
+    <button id="saveBtn" class="add-btn" title="저장">💾</button>
 </div>
 <div class="app">
     <div class="sidebar">
@@ -723,7 +744,7 @@
                    class="memo-title"
                    type="text"
                    autocomplete="off"/>
-            <div id="memoEditor" class="memo-editor" style="height: calc(100% - 60px);"></div>
+            <div id="memoEditor" class="memo-editor"></div>
             <div id="memoDates" class="memo-dates">
                 <small>생성 | <span id="createDate"></span> <br> 수정 | <span id="updateDate"></span></small>
             </div>
@@ -772,6 +793,7 @@
         let memoEditor = new toastui.Editor({
             el: document.getElementById('memoEditor'),
             height: '100%',
+            width: '100%',
             initialEditType: 'wysiwyg',
             previewStyle: 'vertical',
             toolbarItems: [
@@ -809,6 +831,7 @@
                 memoEditor = new toastui.Editor({
                     el: document.getElementById('memoEditor'),
                     height: '100%',
+                    width: '100%',
                     initialEditType: 'wysiwyg',
                     previewStyle: 'vertical',
                     toolbarItems: [
@@ -829,6 +852,10 @@
         const sidebar = document.querySelector('.sidebar');
         toggleSidebar.addEventListener('click', () => {
             sidebar.classList.toggle('open');
+        });
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.addEventListener('click', () => {
+            updateContent();
         });
 
         // Close sidebar when content area is clicked (useful on small screens)
@@ -969,6 +996,7 @@
                 memoEditor = new toastui.Editor({
                     el: document.getElementById('memoEditor'),
                     height: '100%',
+                    width: '100%',
                     initialEditType: 'wysiwyg',
                     previewStyle: 'vertical',
                     toolbarItems: [
