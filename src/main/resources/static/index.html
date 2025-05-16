@@ -15,21 +15,24 @@
             padding: 20px;
         }
 
-        /* Grid layout for settings items */
+        /* Grid layout for settings items: two columns */
         #settingsModal .setting-item {
             display: grid;
             grid-template-columns: 1fr auto;
-            grid-gap: 20px 10px;
+            grid-gap: 4px 10px;
             align-items: start;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
+        }
+
+        /* Make description sit below label and stay in first column */
+        #settingsModal .setting-item .desc {
+            grid-column: 1 / 2;
+            grid-row: 2;
+            margin: 0;
         }
 
         #settingsModal .setting-item > div {
             text-align: left;
-        }
-
-        /* Reset margins/padding in settings items */
-        #settingsModal .setting-item > div {
             margin: 0;
             padding: 0;
         }
@@ -38,11 +41,9 @@
         #settingsModal .setting-item .desc {
             margin-left: 0;
         }
-
         #settingsModal .setting-item label {
             font-weight: bold;
         }
-
         #settingsModal .setting-item .desc {
             display: block;
             font-size: 12px;
@@ -50,18 +51,11 @@
             margin-top: 8px;
             margin-bottom: 8px;
         }
-
         #settingsModal .setting-item label input[type="checkbox"] {
             margin-right: 8px;
         }
 
 
-        /* Align controls to the right edge */
-        #settingsModal .setting-item > input,
-        #settingsModal .setting-item > select,
-        #settingsModal .setting-item > button {
-            justify-self: end;
-        }
 
         /* Disabled state styling */
         #settingsModal .setting-item input:disabled,
@@ -70,7 +64,6 @@
             background-color: #ddd;
             cursor: not-allowed;
         }
-
         #settingsModal .setting-item input[type="number"],
         #settingsModal .setting-item select,
         #settingsModal .setting-item button {
@@ -81,7 +74,6 @@
             color: var(--content-text);
             font-size: 14px;
         }
-
         #settingsModal .setting-item button {
             cursor: pointer;
         }
@@ -177,9 +169,11 @@
             box-shadow: inset 0 -20px 20px -20px var(--content-bg);
             position: relative; /* for overlay */
         }
+
         .memo-content::-webkit-scrollbar {
             display: none; /* Chrome/Safari/Webkit */
         }
+
         /* Limit editor height and enable internal scrolling */
         .memo-editor {
             flex: 1 1 auto;
@@ -188,6 +182,7 @@
             max-height: calc(100vh - 150px);
             overflow-y: auto;
         }
+
         /* Prevent body from scrolling vertically */
         body {
             overflow-y: hidden;
@@ -413,6 +408,42 @@
             align-items: center;
         }
 
+        /* Dialog buttons for invite/client dialogs */
+        .invite-dialog button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            cursor: pointer;
+            font-size: 14px;
+            margin: 4px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .invite-dialog button:hover {
+            background-color: var(--sidebar-text);
+            color: var(--sidebar-bg);
+        }
+
+        /* Layout for setting items: two columns */
+        .invite-dialog .setting-item {
+            display: flex;
+            align-items: center;
+        }
+        /* Push controls (number input, select, or button) to the right */
+        .invite-dialog .setting-item > input[type="number"],
+        .invite-dialog .setting-item > select,
+        .invite-dialog .setting-item > button {
+            margin-left: auto;
+        }
+        /* Ensure small descriptions wrap below label, not affecting flex alignment */
+        .invite-dialog .setting-item .desc {
+            display: block;
+            margin-top: 2px;
+            color: var(--content-text);
+        }
+
         /* Always-visible menu button for each memo */
         .menu-btn {
             position: absolute;
@@ -587,6 +618,7 @@
             box-shadow: inset 0 -20px 20px -20px var(--content-bg);
             position: relative;
         }
+
         .terms-content::-webkit-scrollbar {
             display: none;
         }
@@ -757,6 +789,35 @@
 <script>
     var currentMenuCode = null;
     document.addEventListener('DOMContentLoaded', () => {
+
+        const connectCodeKey = 'connectClientCode';
+        let connectClientResponseData = null;
+
+        function initConnectClient() {
+            const stored = localStorage.getItem(connectCodeKey);
+            if (stored) {
+                fetch('/connect/client', {headers: {'Connect-Code': stored}})
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data) {
+                            localStorage.removeItem(connectCodeKey);
+                            location.reload();
+                        } else {
+                            connectClientResponseData = data;
+                            noteCodeObjs = data.noteCodes.map(c => ({code: c}));
+                            localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+                            codes = noteCodeObjs.map(o => o.code);
+                        }
+                    })
+                    .catch(() => {
+                        localStorage.removeItem(connectCodeKey);
+                        location.reload();
+                    });
+            }
+        }
+
+        initConnectClient();
+
         currentMenuCode = null;
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
@@ -933,7 +994,7 @@
         const resetListBtn = settingsModal ? document.getElementById('resetListBtn') : null;
 
         if (settingsBtn) {
-            // Open/close settings modal
+            // Open/close settings modal and update client integration UI
             settingsBtn.addEventListener('click', () => {
                 // Initialize current values
                 const savedInterval = parseInt(localStorage.getItem('autoSaveInterval'));
@@ -948,6 +1009,26 @@
                 }
                 themeSelect.value = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
                 settingsModal.classList.remove('hidden');
+                // Update client integration UI
+                const isLinked = !!connectClientResponseData;
+                document.getElementById('clientStatus').textContent = isLinked
+                    ? `연동중: ${connectClientResponseData.code}`
+                    : '미연동';
+                const btn = document.getElementById('clientIntegrationBtn');
+                btn.textContent = isLinked ? '연결해제' : '연결';
+                btn.onclick = () => {
+                    if (connectClientResponseData) {
+                        // Disconnect without reload
+                        localStorage.removeItem(connectCodeKey);
+                        connectClientResponseData = null;
+                        const statusElem = document.getElementById('clientStatus');
+                        statusElem.textContent = '미연동';
+                        btn.textContent = '연결';
+                    } else {
+                        settingsModal.classList.add('hidden');
+                        openClientIntegrationDialog();
+                    }
+                };
             });
             settingsClose.addEventListener('click', () => settingsModal.classList.add('hidden'));
             settingsModal.querySelector('.invite-overlay').addEventListener('click', () => settingsModal.classList.add('hidden'));
@@ -1020,6 +1101,70 @@
                 }
             });
         }
+
+        // --- Client Integration Dialog Logic (attach listeners only once) ---
+        function openClientIntegrationDialog() {
+            const m = document.getElementById('clientIntegrationModal');
+            m.classList.remove('hidden');
+            ['createClientBtn', 'connectClientBtn'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+            ['clientConnectForm', 'clientConnectStatus', 'clientConnectExecuteBtn', 'clientDialogBackBtn'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        }
+
+        document.getElementById('clientDialogClose').addEventListener('click', () => {
+            document.getElementById('clientIntegrationModal').classList.add('hidden');
+        });
+        document.getElementById('createClientBtn').addEventListener('click', () => {
+            fetch('/connect/client?' + codes.map(c => 'noteCodes=' + encodeURIComponent(c)).join('&'), {method: 'POST'})
+                .then(res => res.json())
+                .then(data => {
+                    localStorage.setItem(connectCodeKey, data.code);
+                    connectClientResponseData = data;
+                    const status = document.getElementById('clientConnectStatus');
+                    status.textContent = '생성 완료되었습니다';
+                    status.classList.remove('hidden');
+                    document.getElementById('clientDialogBackBtn').classList.remove('hidden');
+                    ['createClientBtn', 'connectClientBtn'].forEach(id => document.getElementById(id).classList.add('hidden'));
+                });
+        });
+        document.getElementById('connectClientBtn').addEventListener('click', () => {
+            document.getElementById('clientConnectForm').classList.remove('hidden');
+            ['createClientBtn', 'connectClientBtn'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById('clientDialogBackBtn').classList.remove('hidden');
+        });
+        document.getElementById('clientDialogBackBtn').addEventListener('click', () => {
+            location.reload();
+        });
+        document.getElementById('clientCodeConfirmBtn').addEventListener('click', () => {
+            const input = document.getElementById('clientCodeInput').value.trim();
+            const statusElem = document.getElementById('clientConnectStatus');
+            // Clear previous status
+            statusElem.classList.add('hidden');
+            fetch('/connect/client', {headers: {'Connect-Code': input}})
+                .then(res => res.json().catch(() => null))
+                .then(data => {
+                    if (!data) {
+                        statusElem.textContent = '존재하지 않는 코드입니다';
+                        statusElem.classList.remove('hidden');
+                        return;
+                    }
+                    connectClientResponseData = data;
+                    statusElem.textContent = '확인되었습니다\n아래 연결 버튼을 누르면 기존 등록한 메모를 사라집니다';
+                    statusElem.classList.remove('hidden');
+                    document.getElementById('clientConnectExecuteBtn').classList.remove('hidden');
+                    document.getElementById('clientCodeConfirmBtn').disabled = true;
+                })
+                .catch(() => {
+                    statusElem.textContent = '존재하지 않는 코드입니다';
+                    statusElem.classList.remove('hidden');
+                });
+        });
+        document.getElementById('clientConnectExecuteBtn').addEventListener('click', () => {
+            const data = connectClientResponseData;
+            localStorage.setItem(connectCodeKey, data.code);
+            noteCodeObjs = data.noteCodes.map(c => ({code: c}));
+            localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+            location.reload();
+        });
 
         codeInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
@@ -1246,7 +1391,10 @@
                 ? `/note/${encodeURIComponent(input)}`
                 : '/note';
 
-            fetch(endpoint, {method: 'POST'})
+            const headers = {};
+            const stored = localStorage.getItem(connectCodeKey);
+            if (stored) headers['Connect-Code'] = stored;
+            fetch(endpoint, {method: 'POST', headers})
                 .then(res => res.json())
                 .then(note => {
                     noteCodeObjs.unshift({code: note.code});
@@ -1346,10 +1494,28 @@
 
         menuDelete.addEventListener('click', () => {
             if (currentMenuCode) {
-                noteCodeObjs = noteCodeObjs.filter(o => o.code !== currentMenuCode);
-                localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
-                codes = noteCodeObjs.map(o => o.code);
-                fetchMemos();
+                const codeToRemove = currentMenuCode;
+                const storedConnectCode = localStorage.getItem(connectCodeKey);
+                const performLocalRemoval = () => {
+                    noteCodeObjs = noteCodeObjs.filter(o => o.code !== codeToRemove);
+                    localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+                    codes = noteCodeObjs.map(o => o.code);
+                    fetchMemos();
+                };
+                if (storedConnectCode) {
+                    fetch(`/connect/client/note/codes/${encodeURIComponent(codeToRemove)}`, {
+                        method: 'DELETE',
+                        headers: { 'Connect-Code': storedConnectCode }
+                    })
+                    .then(() => performLocalRemoval())
+                    .catch(err => {
+                        console.error('Failed to remove note code from server', err);
+                        // still perform local removal to keep UI responsive
+                        performLocalRemoval();
+                    });
+                } else {
+                    performLocalRemoval();
+                }
             }
             itemMenu.classList.add('hidden');
         });
@@ -1393,6 +1559,14 @@
                 <option value="dark">다크모드</option>
             </select>
         </div>
+        <div class="setting-item">
+            <div>
+                <label>클라이언트 연동</label>
+                <small class="desc">클라이언트와 메모를 연동합니다.</small>
+                <div id="clientStatus" style="margin-top:8px;"></div>
+            </div>
+            <button id="clientIntegrationBtn">연결</button>
+        </div>
         <!-- 리스트 초기화 -->
         <div class="setting-item">
             <div>
@@ -1402,6 +1576,24 @@
             </div>
             <button id="resetListBtn">삭제</button>
         </div>
+    </div>
+</div>
+<div id="clientIntegrationModal" class="invite-modal hidden">
+    <div class="invite-overlay"></div>
+    <div class="invite-dialog">
+        <button id="clientDialogClose" class="invite-close">×</button>
+        <h2>클라이언트 연동</h2>
+        <div class="client-dialog-actions">
+            <button id="createClientBtn">생성</button>
+            <button id="connectClientBtn">연결</button>
+        </div>
+        <div id="clientConnectForm" class="hidden" style="margin-top:10px;">
+            <input id="clientCodeInput" type="text" placeholder="코드 입력" style="padding:4px; width:60%;"/>
+            <button id="clientCodeConfirmBtn">확인</button>
+        </div>
+        <div id="clientConnectStatus" class="hidden" style="white-space:pre-wrap; margin-top:10px;"></div>
+        <button id="clientConnectExecuteBtn" class="hidden" style="margin-top:10px;">연결</button>
+        <button id="clientDialogBackBtn" class="hidden" style="margin-top:10px;">돌아가기</button>
     </div>
 </div>
 </body>

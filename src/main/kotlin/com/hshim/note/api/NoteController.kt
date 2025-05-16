@@ -12,13 +12,16 @@ class NoteController(
     private val noteCommandService: NoteCommandService,
 ) {
     @PostMapping
-    fun init(): NoteResponse {
-        return noteCommandService.init(null)
+    fun init(@RequestHeader("Connect-Code") connectCode: String?): NoteResponse {
+        return noteCommandService.init(null, connectCode)
     }
 
     @PostMapping("/{code}")
-    fun init(@PathVariable code: String): NoteResponse {
-        return noteCommandService.init(code)
+    fun init(
+        @RequestHeader("Connect-Code") connectCode: String?,
+        @PathVariable code: String,
+    ): NoteResponse {
+        return noteCommandService.init(code, connectCode)
     }
 
     @PutMapping("/{code}/title")
