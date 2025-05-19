@@ -1446,7 +1446,7 @@
             qrSpinner.classList.remove('hidden');
 
             inviteCodeElem.textContent = activeCode;
-            const url = `https://note.hshim-universe.com/page/note/invite?code=${encodeURIComponent(activeCode)}`;
+            const url = `${window.location.origin}/page/note/invite?code=${encodeURIComponent(activeCode)}`;
 
             inviteQR.onload = () => qrSpinner.classList.add('hidden');
             inviteQR.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
@@ -1462,7 +1462,7 @@
 
         // Copy link button
         inviteCopyLink.addEventListener('click', () => {
-            const url = `https://note.hshim-universe.com/page/note/invite?code=${encodeURIComponent(activeCode)}`;
+            const url = `${window.location.origin}/page/note/invite?code=${encodeURIComponent(activeCode)}`;
             navigator.clipboard.writeText(url);
             showNotification('링크가 복사되었습니다.');
         });
