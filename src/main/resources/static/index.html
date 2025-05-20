@@ -804,7 +804,16 @@
                             location.reload();
                         } else {
                             connectClientResponseData = data;
-                            noteCodeObjs = data.noteCodes.map(c => ({code: c}));
+                            const returnedCodes = data.noteCodes;
+                            // Load previously stored order
+                            const stored = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
+                            // Keep only codes that still exist, preserving original order
+                            const merged = stored.map(o => o.code).filter(code => returnedCodes.includes(code));
+                            // Append any new codes at the end
+                            returnedCodes.forEach(code => {
+                                if (!merged.includes(code)) merged.push(code);
+                            });
+                            noteCodeObjs = merged.map(code => ({code}));
                             localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
                             codes = noteCodeObjs.map(o => o.code);
                         }
