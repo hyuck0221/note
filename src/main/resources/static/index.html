@@ -55,6 +55,14 @@
             margin-right: 8px;
         }
 
+        /* Client integration status text styling */
+        #settingsModal .invite-dialog .client-status {
+            grid-column: 1 / -1;
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: var(--content-text);
+        }
+
 
 
         /* Disabled state styling */
@@ -426,23 +434,6 @@
             color: var(--sidebar-bg);
         }
 
-        /* Layout for setting items: two columns */
-        .invite-dialog .setting-item {
-            display: flex;
-            align-items: center;
-        }
-        /* Push controls (number input, select, or button) to the right */
-        .invite-dialog .setting-item > input[type="number"],
-        .invite-dialog .setting-item > select,
-        .invite-dialog .setting-item > button {
-            margin-left: auto;
-        }
-        /* Ensure small descriptions wrap below label, not affecting flex alignment */
-        .invite-dialog .setting-item .desc {
-            display: block;
-            margin-top: 2px;
-            color: var(--content-text);
-        }
 
         /* Always-visible menu button for each memo */
         .menu-btn {
@@ -716,6 +707,20 @@
             min-width: 0;
         }
 
+        /* Ensure dark-mode editor fills available height */
+        .toastui-editor-dark,
+        .toastui-editor-defaultUI {
+          display: flex;
+          flex-direction: column;
+          height: 100% !important;
+        }
+        .toastui-editor-dark .toastui-editor-ww-editor,
+        .toastui-editor-dark .toastui-editor-md-container {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+        }
+
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
@@ -747,6 +752,12 @@
     </style>
 </head>
 <body>
+<script>
+  (function() {
+    var storedTheme = localStorage.getItem('theme') || 'dark-mode';
+    document.body.classList.add(storedTheme);
+  })();
+</script>
 <div class="topbar">
     <button id="toggleSidebar" class="add-btn">☰</button>
     <button id="themeToggle" class="add-btn">
@@ -787,8 +798,37 @@
     </div>
 </div>
 <script>
+    // Persist selected memo across reloads
+    const activeCodeKey = 'activeMemoCode';
+    let activeCode = localStorage.getItem(activeCodeKey) || null;
+
     var currentMenuCode = null;
+
     document.addEventListener('DOMContentLoaded', () => {
+
+        // Utility selectors
+        const $ = selector => document.querySelector(selector);
+        const $$ = selector => Array.from(document.querySelectorAll(selector));
+
+        // Initialize or reinitialize the ToastUI editor
+        function initEditor(content = '') {
+          return new toastui.Editor({
+            el: $('#memoEditor'),
+            height: '100%',
+            width: '100%',
+            initialEditType: 'wysiwyg',
+            previewStyle: 'vertical',
+            toolbarItems: [
+              ['heading', 'bold', 'italic', 'strike'],
+              ['hr', 'quote'],
+              ['ul', 'ol', 'task', 'table'],
+              ['link', 'code', 'codeblock']
+            ],
+            hideModeSwitch: true,
+            initialValue: content,
+            theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+          });
+        }
 
         const connectCodeKey = 'connectClientCode';
         let connectClientResponseData = null;
@@ -828,11 +868,11 @@
         initConnectClient();
 
         currentMenuCode = null;
-        const themeToggle = document.getElementById('themeToggle');
-        const themeIcon = document.getElementById('themeIcon');
+        const themeToggle = $('#themeToggle');
+        const themeIcon = $('#themeIcon');
 
         // Editor container reference and theme helper
-        const memoEditorContainer = document.getElementById('memoEditor');
+        const memoEditorContainer = $('#memoEditor');
 
         function applyEditorThemeClass() {
             // Find the editor root wrapper and toggle UI classes
@@ -856,26 +896,9 @@
         }
 
         // Initialize icon
-        const storedTheme = localStorage.getItem('theme') || 'dark-mode';
-        document.body.classList.add(storedTheme);
         updateThemeIcon();
         // Initialize WYSIWYG Markdown editor (Toast UI)
-        let memoEditor = new toastui.Editor({
-            el: document.getElementById('memoEditor'),
-            height: '100%',
-            width: '100%',
-            initialEditType: 'wysiwyg',
-            previewStyle: 'vertical',
-            toolbarItems: [
-                ['heading', 'bold', 'italic', 'strike'],
-                ['hr', 'quote'],
-                ['ul', 'ol', 'task', 'table'],
-                ['link', 'code', 'codeblock']
-            ],
-            hideModeSwitch: true,
-            initialValue: '',
-            theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
-        });
+        let memoEditor = initEditor('');
         // Auto-save on Ctrl+S / Cmd+S
         // Auto-save on Ctrl+S / Cmd+S
         document.addEventListener('keydown', e => {
@@ -898,38 +921,23 @@
                 // Reinitialize editor to apply new theme
                 const currentContent = memoEditor.getMarkdown();
                 memoEditor.destroy();
-                memoEditor = new toastui.Editor({
-                    el: document.getElementById('memoEditor'),
-                    height: '100%',
-                    width: '100%',
-                    initialEditType: 'wysiwyg',
-                    previewStyle: 'vertical',
-                    toolbarItems: [
-                        ['heading', 'bold', 'italic', 'strike'],
-                        ['hr', 'quote'],
-                        ['ul', 'ol', 'task', 'table'],
-                        ['link', 'code', 'codeblock']
-                    ],
-                    hideModeSwitch: true,
-                    initialValue: currentContent,
-                    theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
-                });
+                memoEditor = initEditor(currentContent);
                 applyEditorThemeClass();
             }, 300);
         });
 
-        const toggleSidebar = document.getElementById('toggleSidebar');
-        const sidebar = document.querySelector('.sidebar');
+        const toggleSidebar = $('#toggleSidebar');
+        const sidebar = $('.sidebar');
         toggleSidebar.addEventListener('click', () => {
             sidebar.classList.toggle('open');
         });
-        const saveBtn = document.getElementById('saveBtn');
+        const saveBtn = $('#saveBtn');
         saveBtn.addEventListener('click', () => {
             updateContent();
         });
 
         // Close sidebar when content area is clicked (useful on small screens)
-        const contentArea = document.querySelector('.content');
+        const contentArea = $('.content');
         contentArea.addEventListener('click', () => {
             if (sidebar.classList.contains('open')) {
                 sidebar.classList.remove('open');
@@ -985,22 +993,22 @@
             };
         }
 
-        const sidebarList = document.getElementById('memoList');
-        const memoDetail = document.getElementById('memoDetail');
-        const memoTitle = document.getElementById('memoTitle');
-        const createDateElem = document.getElementById('createDate');
-        const updateDateElem = document.getElementById('updateDate');
-        const addBtn = document.getElementById('addBtn');
-        const codeInput = document.getElementById('codeInput');
-        const noMemoElem = document.getElementById('noMemo');
+        const sidebarList = $('#memoList');
+        const memoDetail = $('#memoDetail');
+        const memoTitle = $('#memoTitle');
+        const createDateElem = $('#createDate');
+        const updateDateElem = $('#updateDate');
+        const addBtn = $('#addBtn');
+        const codeInput = $('#codeInput');
+        const noMemoElem = $('#noMemo');
         // Settings modal logic
-        const settingsBtn = document.getElementById('settingsBtn');
-        const settingsModal = document.getElementById('settingsModal');
-        const settingsClose = settingsModal ? document.getElementById('settingsClose') : null;
-        const autoSaveEnable = settingsModal ? document.getElementById('autoSaveEnable') : null;
-        const autoSaveInput = settingsModal ? document.getElementById('autoSaveIntervalInput') : null;
-        const themeSelect = settingsModal ? document.getElementById('themeSelect') : null;
-        const resetListBtn = settingsModal ? document.getElementById('resetListBtn') : null;
+        const settingsBtn = $('#settingsBtn');
+        const settingsModal = $('#settingsModal');
+        const settingsClose = settingsModal ? $('#settingsClose') : null;
+        const autoSaveEnable = settingsModal ? $('#autoSaveEnable') : null;
+        const autoSaveInput = settingsModal ? $('#autoSaveIntervalInput') : null;
+        const themeSelect = settingsModal ? $('#themeSelect') : null;
+        const resetListBtn = settingsModal ? $('#resetListBtn') : null;
 
         if (settingsBtn) {
             // Open/close settings modal and update client integration UI
@@ -1020,17 +1028,17 @@
                 settingsModal.classList.remove('hidden');
                 // Update client integration UI
                 const isLinked = !!connectClientResponseData;
-                document.getElementById('clientStatus').textContent = isLinked
+                $('#clientStatus').textContent = isLinked
                     ? `연동중: ${connectClientResponseData.code}`
                     : '미연동';
-                const btn = document.getElementById('clientIntegrationBtn');
+                const btn = $('#clientIntegrationBtn');
                 btn.textContent = isLinked ? '연결해제' : '연결';
                 btn.onclick = () => {
                     if (connectClientResponseData) {
                         // Disconnect without reload
                         localStorage.removeItem(connectCodeKey);
                         connectClientResponseData = null;
-                        const statusElem = document.getElementById('clientStatus');
+                        const statusElem = $('#clientStatus');
                         statusElem.textContent = '미연동';
                         btn.textContent = '연결';
                     } else {
@@ -1083,22 +1091,7 @@
                 // Reinitialize editor to apply new theme
                 const currentContent = memoEditor.getMarkdown();
                 memoEditor.destroy();
-                memoEditor = new toastui.Editor({
-                    el: document.getElementById('memoEditor'),
-                    height: '100%',
-                    width: '100%',
-                    initialEditType: 'wysiwyg',
-                    previewStyle: 'vertical',
-                    toolbarItems: [
-                        ['heading', 'bold', 'italic', 'strike'],
-                        ['hr', 'quote'],
-                        ['ul', 'ol', 'task', 'table'],
-                        ['link', 'code', 'codeblock']
-                    ],
-                    hideModeSwitch: true,
-                    initialValue: currentContent,
-                    theme: val
-                });
+                memoEditor = initEditor(currentContent);
                 applyEditorThemeClass();
             });
 
@@ -1119,33 +1112,33 @@
             ['clientConnectForm', 'clientConnectStatus', 'clientConnectExecuteBtn', 'clientDialogBackBtn'].forEach(id => document.getElementById(id).classList.add('hidden'));
         }
 
-        document.getElementById('clientDialogClose').addEventListener('click', () => {
-            document.getElementById('clientIntegrationModal').classList.add('hidden');
+        $('#clientDialogClose').addEventListener('click', () => {
+            $('#clientIntegrationModal').classList.add('hidden');
         });
-        document.getElementById('createClientBtn').addEventListener('click', () => {
+        $('#createClientBtn').addEventListener('click', () => {
             fetch('/connect/client?' + codes.map(c => 'noteCodes=' + encodeURIComponent(c)).join('&'), {method: 'POST'})
                 .then(res => res.json())
                 .then(data => {
                     localStorage.setItem(connectCodeKey, data.code);
                     connectClientResponseData = data;
-                    const status = document.getElementById('clientConnectStatus');
+                    const status = $('#clientConnectStatus');
                     status.textContent = '생성 완료되었습니다';
                     status.classList.remove('hidden');
-                    document.getElementById('clientDialogBackBtn').classList.remove('hidden');
-                    ['createClientBtn', 'connectClientBtn'].forEach(id => document.getElementById(id).classList.add('hidden'));
+                    $('#clientDialogBackBtn').classList.remove('hidden');
+                    ['createClientBtn', 'connectClientBtn'].forEach(id => $('#' + id).classList.add('hidden'));
                 });
         });
-        document.getElementById('connectClientBtn').addEventListener('click', () => {
-            document.getElementById('clientConnectForm').classList.remove('hidden');
-            ['createClientBtn', 'connectClientBtn'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            document.getElementById('clientDialogBackBtn').classList.remove('hidden');
+        $('#connectClientBtn').addEventListener('click', () => {
+            $('#clientConnectForm').classList.remove('hidden');
+            ['createClientBtn', 'connectClientBtn'].forEach(id => $('#' + id).classList.add('hidden'));
+            $('#clientDialogBackBtn').classList.remove('hidden');
         });
-        document.getElementById('clientDialogBackBtn').addEventListener('click', () => {
+        $('#clientDialogBackBtn').addEventListener('click', () => {
             location.reload();
         });
-        document.getElementById('clientCodeConfirmBtn').addEventListener('click', () => {
-            const input = document.getElementById('clientCodeInput').value.trim();
-            const statusElem = document.getElementById('clientConnectStatus');
+        $('#clientCodeConfirmBtn').addEventListener('click', () => {
+            const input = $('#clientCodeInput').value.trim();
+            const statusElem = $('#clientConnectStatus');
             // Clear previous status
             statusElem.classList.add('hidden');
             fetch('/connect/client', {headers: {'Connect-Code': input}})
@@ -1159,15 +1152,15 @@
                     connectClientResponseData = data;
                     statusElem.textContent = '확인되었습니다\n아래 연결 버튼을 누르면 기존 등록한 메모를 사라집니다';
                     statusElem.classList.remove('hidden');
-                    document.getElementById('clientConnectExecuteBtn').classList.remove('hidden');
-                    document.getElementById('clientCodeConfirmBtn').disabled = true;
+                    $('#clientConnectExecuteBtn').classList.remove('hidden');
+                    $('#clientCodeConfirmBtn').disabled = true;
                 })
                 .catch(() => {
                     statusElem.textContent = '존재하지 않는 코드입니다';
                     statusElem.classList.remove('hidden');
                 });
         });
-        document.getElementById('clientConnectExecuteBtn').addEventListener('click', () => {
+        $('#clientConnectExecuteBtn').addEventListener('click', () => {
             const data = connectClientResponseData;
             localStorage.setItem(connectCodeKey, data.code);
             noteCodeObjs = data.noteCodes.map(c => ({code: c}));
@@ -1184,7 +1177,7 @@
 
         let codes = noteCodeObjs.map(o => o.code);
         let memos = [];
-        let activeCode = null;
+        // Remove declaration of let activeCode = null; (now loaded from storage)
         if (codes.length === 0) {
             memoDetail.classList.add('hidden');
             noMemoElem.classList.remove('hidden');
@@ -1193,6 +1186,7 @@
         function fetchMemos() {
             // If there are no saved codes, hide detail and invite, show “no memo” and skip fetching
             if (codes.length === 0) {
+                sidebarList.innerHTML = '';
                 memoDetail.classList.add('hidden');
                 noMemoElem.classList.remove('hidden');
                 return;
@@ -1221,14 +1215,12 @@
                     }
                     // Hide “no memo” and show invite button
                     noMemoElem.classList.add('hidden');
-                    // If a memo is selected, show detail; otherwise, select the first memo automatically if available
-                    if (activeCode) {
-                        selectMemo(activeCode);
-                    } else if (memos.length > 0) {
-                        // 자동으로 첫 번째 메모 선택
+                    // If no stored selection or it's invalid, select first
+                    if (!activeCode || !memos.find(m => m.code === activeCode)) {
                         activeCode = memos[0].code;
-                        selectMemo(activeCode);
                     }
+                    localStorage.setItem(activeCodeKey, activeCode);
+                    selectMemo(activeCode);
                 });
         }
 
@@ -1293,6 +1285,7 @@
 
         function selectMemo(code) {
             activeCode = code;
+            localStorage.setItem(activeCodeKey, code);
             const memo = memos.find(m => m.code === code);
             if (memo) {
                 memoDetail.classList.remove('hidden');
@@ -1442,12 +1435,12 @@
         // 페이지 로드 후 설정값이 있으면 자동저장 시작
         setupAutoSave();
         // Invite dialog logic
-        const inviteModal = document.getElementById('inviteModal');
+        const inviteModal = $('#inviteModal');
         const inviteOverlay = inviteModal.querySelector('.invite-overlay');
-        const inviteClose = document.getElementById('inviteClose');
-        const inviteCodeElem = document.getElementById('inviteCode');
-        const inviteQR = document.getElementById('inviteQR');
-        const inviteCopyLink = document.getElementById('inviteCopyLink');
+        const inviteClose = $('#inviteClose');
+        const inviteCodeElem = $('#inviteCode');
+        const inviteQR = $('#inviteQR');
+        const inviteCopyLink = $('#inviteCopyLink');
 
         function openInvite() {
             if (!activeCode) return;
@@ -1482,9 +1475,9 @@
             showNotification('코드가 복사되었습니다.');
         });
 
-        const itemMenu = document.getElementById('itemMenu');
-        const menuInvite = document.getElementById('menuInvite');
-        const menuDelete = document.getElementById('menuDelete');
+        const itemMenu = $('#itemMenu');
+        const menuInvite = $('#menuInvite');
+        const menuDelete = $('#menuDelete');
 
         // Hide menu when clicking outside
         document.addEventListener('click', e => {
@@ -1548,42 +1541,32 @@
     <div class="invite-overlay"></div>
     <div class="invite-dialog">
         <button id="settingsClose" class="invite-close">×</button>
-        <h2 style="text-align:left; margin-bottom:20px;">설정</h2>
-        <!-- 자동저장 인터벌 -->
-        <div class="setting-item">
-            <div>
-                <label><input type="checkbox" id="autoSaveEnable"> 자동저장 (초)</label>
-                <small class="desc">메모 입력 중 자동저장될 시간을 설정합니다. (10~240)</small>
-            </div>
-            <input type="number" id="autoSaveIntervalInput" min="10" max="240" disabled style="width:60px;"/>
-        </div>
-        <!-- 테마 설정 -->
-        <div class="setting-item">
-            <div>
-                <label for="themeSelect">테마</label>
-                <small class="desc">웹페이지의 테마를 설정합니다.</small>
-            </div>
+        <h2>설정</h2>
+        <div class="setting-list">
+          <div class="setting-item">
+            <label><input type="checkbox" id="autoSaveEnable"> 자동저장 (초)</label>
+            <input type="number" id="autoSaveIntervalInput" min="10" max="240" disabled>
+            <small class="desc">메모 작성 중 자동으로 저장될 시간을 설정합니다. (10~240초)</small>
+          </div>
+          <div class="setting-item">
+            <label for="themeSelect">테마</label>
             <select id="themeSelect">
-                <option value="light">화이트모드</option>
-                <option value="dark">다크모드</option>
+              <option value="light">화이트모드</option>
+              <option value="dark">다크모드</option>
             </select>
-        </div>
-        <div class="setting-item">
-            <div>
-                <label>클라이언트 연동</label>
-                <small class="desc">클라이언트와 메모를 연동합니다.</small>
-                <div id="clientStatus" style="margin-top:8px;"></div>
-            </div>
+            <small class="desc">웹페이지의 테마를 선택합니다.</small>
+          </div>
+          <div class="setting-item">
+            <label>클라이언트 연동</label>
             <button id="clientIntegrationBtn">연결</button>
-        </div>
-        <!-- 리스트 초기화 -->
-        <div class="setting-item">
-            <div>
-                <label>리스트 초기화</label>
-                <small class="desc">지금까지 등록한 메모를 리스트에서 제거합니다 <br> 메모 내용은 삭제되지 않고
-                    리스트에서만 제거됩니다.</small>
-            </div>
-            <button id="resetListBtn">삭제</button>
+            <div id="clientStatus" class="client-status"></div>
+            <small class="desc">클라이언트 와의 메모를 연동하거나 해제합니다.</small>
+          </div>
+          <div class="setting-item">
+            <label>리스트 초기화</label>
+            <button id="resetListBtn">초기화</button>
+            <small class="desc">등록된 메모 리스트를 초기화합니다. 메모 내용은 유지됩니다.</small>
+          </div>
         </div>
     </div>
 </div>

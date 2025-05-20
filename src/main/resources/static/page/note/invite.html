@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>메모 초대장</title>
 </head>
 <body>
 <script>
@@ -16,7 +16,10 @@
             return;
         }
         // Code exists: create memo via API
-        fetch(`/note/${encodeURIComponent(code)}`, {method: 'POST'})
+        const headers = {};
+        const storedConnect = localStorage.getItem('connectClientCode');
+        if (storedConnect) headers['Connect-Code'] = storedConnect;
+        fetch(`/note/${encodeURIComponent(code)}`, {method: 'POST', headers})
             .then(res => res.json())
             .then(note => {
                 // Update localStorage with new code at top
