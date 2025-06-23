@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
     <meta name="color-scheme" content="light only"/>
     <meta name="supported-color-schemes" content="light"/>
     <title>온라인 메모장</title>
     <style>
+        html,
+        body {
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+        }
         /* Settings modal styling */
         #settingsModal .invite-dialog {
             width: 40%;
@@ -368,7 +373,7 @@
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
 
         /* Ensure memo detail panel hides when .hidden is applied */
@@ -708,6 +713,12 @@
         }
 
         /* Ensure dark-mode editor fills available height */
+        /* Share‑dialog active mode button */
+        #modeLinkBtn.active, #modeFileBtn.active {
+            background:#333;
+            color:#fff;
+        }
+
         .toastui-editor-dark,
         .toastui-editor-defaultUI {
           display: flex;
@@ -777,8 +788,9 @@
         </div>
         <ul id="memoList" class="memo-list"></ul>
         <div class="sidebar-footer"
-             style="margin-top: auto; padding: 5px 10px; text-align: left; font-size: 12px; color: var(--sidebar-text);">
-            <button id="settingsBtn" class="add-btn" style="font-size: 14px;">설정</button>
+             style="margin-top:auto; padding:5px 10px; font-size:12px; color:var(--sidebar-text); display:flex; justify-content:space-between;">
+            <button id="settingsBtn" class="add-btn" style="font-size:14px;">설정</button>
+            <button id="shareBtn" class="add-btn" title="공유" style="font-size:18px;">🔗</button>
         </div>
     </div>
     <div class="content">
@@ -794,6 +806,54 @@
         </div>
         <div id="noMemo" class="no-memo hidden" style="text-align:center; color: var(--sidebar-text); margin-top:20px;">
             메모 없음
+        </div>
+    </div>
+</div>
+<div id="shareModal" class="invite-modal hidden">
+    <div class="invite-overlay"></div>
+    <div class="invite-dialog" style="min-width:300px;">
+        <button id="shareClose" class="invite-close">×</button>
+
+        <!-- 단계 선택 -->
+        <div id="shareStageSelect">
+            <button id="receiveBtn" style="margin:6px;">공유받기</button>
+            <button id="createBtn"  style="margin:6px;">공유하기</button>
+        </div>
+
+        <!-- 공유받기 -->
+        <div id="shareStageReceive" class="hidden" style="display:flex; flex-direction:column; gap:8px;">
+            <input id="shareCodeInput" type="text" placeholder="코드 입력" style="padding:6px;"/>
+            <button id="shareCodeConfirmBtn">확인</button>
+        </div>
+
+        <!-- 공유하기 -->
+        <div id="shareStageCreate" class="hidden" style="display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; gap:8px; justify-content:center;">
+                <button id="modeLinkBtn">링크</button>
+                <button id="modeFileBtn">파일</button>
+            </div>
+
+            <div id="linkInputWrap" class="hidden">
+                <input id="linkInput" type="text" placeholder="링크 입력" style="width:100%; padding:6px;"/>
+            </div>
+
+            <div id="fileInputWrap" class="hidden" style="border:2px dashed #ccc; padding:20px; text-align:center;">
+                <input id="fileInput" type="file" style="display:none;"/>
+                <p id="fileDropText">여기에 드래그하거나 클릭하여 파일 선택</p>
+            </div>
+
+            <label style="display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" id="remainingChk"/> 조회가능횟수
+                <input type="number" id="remainingInput" min="1" style="width:80px;" disabled/>
+            </label>
+
+            <button id="shareSubmitBtn" disabled>공유하기</button>
+
+            <!-- 결과 -->
+            <div id="shareResultWrap" class="hidden" style="margin-top:16px; text-align:center;">
+                <div id="shareResultText" style="white-space:pre-wrap; font-size:14px;"></div>
+                <img id="shareResultQR" style="margin-top:10px; width:180px; height:180px;" src=""/>
+            </div>
         </div>
     </div>
 </div>
@@ -954,9 +1014,19 @@
 
         let clientId = localStorage.getItem(clientIdKey);
 
-        // Notification logic replaced by Terms-of-Use modal
+        // Notification logic
         function showNotification(msg) {
-            // No-op or implement as needed
+            let notif = document.querySelector('.notification');
+            if (!notif) {
+                notif = document.createElement('div');
+                notif.className = 'notification';
+                document.body.appendChild(notif);
+            }
+            notif.textContent = msg;
+            notif.classList.add('show');
+            setTimeout(() => {
+                notif.classList.remove('show');
+            }, 2000);
         }
 
         const isInitial = !clientId;
@@ -1521,6 +1591,164 @@
             }
             itemMenu.classList.add('hidden');
         });
+
+        /* ---------- 공유 모달 ---------- */
+        const shareBtn   = $('#shareBtn');
+        const shareModal = $('#shareModal');
+        const shareClose = $('#shareClose');
+
+        const stageSelect  = $('#shareStageSelect');
+        const stageReceive = $('#shareStageReceive');
+        const stageCreate  = $('#shareStageCreate');
+
+        const receiveBtn = $('#receiveBtn');
+        const createBtn  = $('#createBtn');
+
+        const shareCodeInput = $('#shareCodeInput');
+        const shareCodeConfirmBtn = $('#shareCodeConfirmBtn');
+
+        const modeLinkBtn = $('#modeLinkBtn');
+        const modeFileBtn = $('#modeFileBtn');
+        const linkInputWrap = $('#linkInputWrap');
+        const fileInputWrap = $('#fileInputWrap');
+        const linkInput  = $('#linkInput');
+        const fileInput  = $('#fileInput');
+        const fileDropText = $('#fileDropText');
+
+        const remainingChk   = $('#remainingChk');
+        const remainingInput = $('#remainingInput');
+
+        const shareSubmitBtn = $('#shareSubmitBtn');
+
+        const shareResultWrap = $('#shareResultWrap');
+        const shareResultText = $('#shareResultText');
+        const shareResultQR   = $('#shareResultQR');
+
+        let currentMode = null;   // 'link' | 'file'
+
+        function openShareModal() {
+            [stageSelect, stageReceive, stageCreate].forEach(el => el.classList.add('hidden'));
+            stageSelect.classList.remove('hidden');
+            shareModal.classList.remove('hidden');
+
+            // reset
+            linkInput.value='';
+            fileInput.value='';
+            fileDropText.textContent='여기에 드래그하거나 클릭하여 파일 선택';
+            shareSubmitBtn.disabled=true;
+            remainingChk.checked=false;
+            remainingInput.disabled=true;
+            remainingInput.value='';
+            shareResultWrap.classList.add('hidden');
+        }
+
+        shareBtn.addEventListener('click', openShareModal);
+        shareClose.addEventListener('click', () => shareModal.classList.add('hidden'));
+        shareModal.querySelector('.invite-overlay').addEventListener('click', () => shareModal.classList.add('hidden'));
+
+        receiveBtn.addEventListener('click', () => {
+            stageSelect.classList.add('hidden');
+            stageReceive.classList.remove('hidden');
+            shareCodeInput.value='';
+            shareCodeInput.focus();
+        });
+
+        createBtn.addEventListener('click', () => {
+            stageSelect.classList.add('hidden');
+            stageCreate.classList.remove('hidden');
+        });
+
+        shareCodeConfirmBtn.addEventListener('click', () => {
+            const code = shareCodeInput.value.trim();
+            if (code) location.href = `/page/share/${encodeURIComponent(code)}`;
+        });
+
+        function setMode(mode) {
+            currentMode = mode;
+            modeLinkBtn.classList.toggle('active', mode==='link');
+            modeFileBtn.classList.toggle('active', mode==='file');
+            linkInputWrap.classList.toggle('hidden', mode!=='link');
+            fileInputWrap.classList.toggle('hidden', mode!=='file');
+            validateShareForm();
+        }
+        modeLinkBtn.addEventListener('click', () => setMode('link'));
+        modeFileBtn.addEventListener('click', () => setMode('file'));
+
+        linkInput.addEventListener('input', validateShareForm);
+        fileInput.addEventListener('change', () => {
+            fileDropText.textContent = fileInput.files.length ? fileInput.files[0].name : '파일 선택';
+            validateShareForm();
+        });
+
+        // drag‑and‑drop
+        ['dragenter','dragover'].forEach(evt => {
+            fileInputWrap.addEventListener(evt, e => {
+                e.preventDefault(); e.stopPropagation();
+                fileInputWrap.style.borderColor='#007BFF';
+            });
+        });
+        ['dragleave','drop'].forEach(evt => {
+            fileInputWrap.addEventListener(evt, e => {
+                e.preventDefault(); e.stopPropagation();
+                fileInputWrap.style.borderColor='#ccc';
+                if (evt==='drop' && e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    fileDropText.textContent = e.dataTransfer.files[0].name;
+                    validateShareForm();
+                }
+            });
+        });
+        fileInputWrap.addEventListener('click', () => fileInput.click());
+
+        remainingChk.addEventListener('change', () => {
+            remainingInput.disabled = !remainingChk.checked;
+            if (!remainingChk.checked) remainingInput.value='';
+        });
+        remainingInput.addEventListener('input', validateShareForm);
+
+        function validateShareForm() {
+            let ok = false;
+            if (currentMode==='link') ok = linkInput.value.trim().length>0;
+            if (currentMode==='file') ok = fileInput.files.length>0;
+            shareSubmitBtn.disabled = !ok;
+        }
+
+        shareSubmitBtn.addEventListener('click', () => {
+            shareSubmitBtn.disabled = true;
+            const params = remainingChk.checked && remainingInput.value
+                ? { remainingCnt: parseInt(remainingInput.value, 10) }
+                : {};
+
+            if (currentMode==='link') {
+                fetch('/share/link', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ link: linkInput.value.trim(), ...params })
+                })
+                .then(res => res.json())
+                .then(showShareResult)
+                .finally(() => shareSubmitBtn.disabled=false);
+            } else if (currentMode==='file') {
+                const fd = new FormData();
+                fd.append('file', fileInput.files[0]);
+                if (params.remainingCnt) fd.append('remainingCnt', params.remainingCnt);
+                fetch('/share/file', { method:'POST', body: fd })
+                .then(res => res.json())
+                .then(showShareResult)
+                .finally(() => shareSubmitBtn.disabled=false);
+            }
+        });
+
+        function showShareResult(data) {
+            if (!data || !data.code) return;
+            shareResultText.textContent =
+                `코드: ${data.code}\n` +
+                `조회가능횟수: ${data.remainingCnt ?? '무제한'}\n` +
+                `만료: ${new Date(data.expireDate).toLocaleString('ko-KR')}`;
+            const fullUrl = `${location.origin}/page/share/${encodeURIComponent(data.code)}`;
+            shareResultQR.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(fullUrl)}`;
+            shareResultWrap.classList.remove('hidden');
+        }
     });
 </script>
 <div id="itemMenu" class="item-menu hidden">
