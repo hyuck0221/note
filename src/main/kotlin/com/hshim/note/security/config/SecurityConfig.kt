@@ -22,6 +22,7 @@ class SecurityConfig(private val props: SecurityProperties) {
             .authorizeHttpRequests { it.anyRequest().permitAll() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .csrf { it.disable() }
+            .cors { it.configurationSource(corsConfigurationSource()) }
             .build()
     }
 
