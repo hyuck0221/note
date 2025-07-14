@@ -706,6 +706,20 @@
             transition: opacity var(--transition-slow);
         }
 
+        #errorNotification {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            background: var(--error);
+            color: white;
+            padding: var(--spacing-md);
+            z-index: 10002;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
         .notification.show {
             opacity: 1;
         }
@@ -875,6 +889,9 @@
 </script>
 
 <div class="app-container">
+    <!-- Error Notification -->
+    <div id="errorNotification" class="notification error" style="display: none;"></div>
+
     <!-- Top Bar -->
     <div class="topbar">
         <div class="topbar-left">
@@ -977,7 +994,7 @@
             <div id="shareStageReceive" class="hidden">
                 <div class="form-group">
                     <label class="form-label">공유 코드</label>
-                    <input id="shareCodeInput" class="form-input" type="text" placeholder="공유 코드를 입력하세요"/>
+                    <input id="shareCodeInput" class="form-input" type="text" placeholder="공유 코드를 입력하세요" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"/>
                 </div>
                 <button id="shareCodeConfirmBtn" class="btn btn-primary">확인</button>
             </div>
@@ -993,7 +1010,7 @@
                 <div id="linkInputWrap" class="hidden">
                     <div class="form-group">
                         <label class="form-label">링크</label>
-                        <input id="linkInput" class="form-input" type="text" placeholder="공유할 링크를 입력하세요"/>
+                        <input id="linkInput" class="form-input" type="text" placeholder="공유할 링크를 입력하세요" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"/>
                     </div>
                 </div>
 
@@ -1008,12 +1025,8 @@
                 </div>
 
                 <div class="form-group">
-                    <div class="form-checkbox">
-                        <input type="checkbox" id="remainingChk"/>
-                        <label for="remainingChk">조회 가능 횟수 제한</label>
-                        <input type="number" id="remainingInput" class="form-input" min="1"
-                               style="width: 80px; margin-left: auto;" disabled/>
-                    </div>
+                    <label class="form-label">공유 가능 횟수</label>
+                    <input type="number" id="remainingInput" class="form-input" min="1" max="99" value="1"/>
                 </div>
 
                 <button id="shareSubmitBtn" class="btn btn-primary" disabled>공유하기</button>
@@ -1021,8 +1034,21 @@
                 <div id="shareResultWrap" class="hidden" style="margin-top: var(--spacing-xl); text-align: center;">
                     <div id="shareResultText"
                          style="white-space: pre-wrap; font-size: var(--font-sm); margin-bottom: var(--spacing-md);"></div>
-                    <img id="shareResultQR" style="width: 180px; height: 180px; border-radius: var(--radius-md);" src=""
-                         alt="QR 코드"/>
+                    <div class="form-group">
+                        <label class="form-label">공유 코드</label>
+                        <div style="display: flex; gap: var(--spacing-sm);">
+                            <input id="shareResultCode" class="form-input" type="text" readonly/>
+                            <button id="copyCodeBtn" class="btn btn-secondary" title="코드 복사">복사</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">정보</label>
+                        <div style="font-size: var(--font-sm); text-align: left; background: var(--surface-secondary); border-radius: var(--radius-md); padding: var(--spacing-md);">
+                            <div>생성 일자: <span id="shareCreateDate">-</span></div>
+                            <div>만료 일자: <span id="shareExpireDate">-</span></div>
+                            <div>남은 조회수: <span id="shareRemainingCnt">-</span></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1129,6 +1155,22 @@
     var currentMenuCode = null;
 
     document.addEventListener('DOMContentLoaded', () => {
+        // Thymeleaf로부터 전달된 에러 메시지 처리
+        const errorParam = '[[${errorMessage}]]';
+        if (errorParam && errorParam !== '[[${errorMessage}]]') {
+            const errorNotification = document.getElementById('errorNotification');
+            errorNotification.textContent = errorParam;
+            errorNotification.style.display = 'block';
+            setTimeout(() => {
+                errorNotification.style.opacity = '1';
+            }, 100);
+            setTimeout(() => {
+                errorNotification.style.opacity = '0';
+                setTimeout(() => {
+                    errorNotification.style.display = 'none';
+                }, 500);
+            }, 3000);
+        }
 
         // Utility selectors
         const $ = selector => document.querySelector(selector);
@@ -1784,6 +1826,11 @@
 
         shareBtn.addEventListener('click', () => {
             shareModal.classList.add('show');
+            // 초기 상태로 설정
+            $('#shareStageSelect').classList.remove('hidden');
+            $('#shareStageReceive').classList.add('hidden');
+            $('#shareStageCreate').classList.add('hidden');
+            $('#shareResultWrap').classList.add('hidden');
         });
 
         shareClose.addEventListener('click', () => {
@@ -1795,6 +1842,171 @@
                 shareModal.classList.remove('show');
             }
         });
+
+        // 공유받기 버튼 클릭
+        $('#receiveBtn').addEventListener('click', () => {
+            $('#shareStageSelect').classList.add('hidden');
+            $('#shareStageReceive').classList.remove('hidden');
+            $('#shareCodeInput').value = '';
+            $('#shareCodeInput').focus();
+        });
+
+        // 공유하기 버튼 클릭
+        $('#createBtn').addEventListener('click', () => {
+            $('#shareStageSelect').classList.add('hidden');
+            $('#shareStageCreate').classList.remove('hidden');
+            $('#linkInputWrap').classList.add('hidden');
+            $('#fileInputWrap').classList.add('hidden');
+            $('#shareSubmitBtn').disabled = true;
+        });
+
+        // 링크 모드 버튼 클릭
+        $('#modeLinkBtn').addEventListener('click', () => {
+            $('#modeLinkBtn').classList.add('btn-primary');
+            $('#modeLinkBtn').classList.remove('btn-secondary');
+            $('#modeFileBtn').classList.add('btn-secondary');
+            $('#modeFileBtn').classList.remove('btn-primary');
+            $('#linkInputWrap').classList.remove('hidden');
+            $('#fileInputWrap').classList.add('hidden');
+            $('#shareSubmitBtn').disabled = !$('#linkInput').value.trim();
+        });
+
+        // 파일 모드 버튼 클릭
+        $('#modeFileBtn').addEventListener('click', () => {
+            $('#modeFileBtn').classList.add('btn-primary');
+            $('#modeFileBtn').classList.remove('btn-secondary');
+            $('#modeLinkBtn').classList.add('btn-secondary');
+            $('#modeLinkBtn').classList.remove('btn-primary');
+            $('#fileInputWrap').classList.remove('hidden');
+            $('#linkInputWrap').classList.add('hidden');
+            $('#shareSubmitBtn').disabled = !$('#fileInput').files.length;
+        });
+
+        // 파일 선택 영역 클릭 처리
+        const fileDropArea = $('#fileDropText').parentElement;
+        fileDropArea.addEventListener('click', () => {
+            $('#fileInput').click();
+        });
+
+        // 파일 드래그 & 드롭 처리
+        fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropArea.style.borderColor = 'var(--accent-primary)';
+        });
+
+        fileDropArea.addEventListener('dragleave', () => {
+            fileDropArea.style.borderColor = 'var(--border-primary)';
+        });
+
+        fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropArea.style.borderColor = 'var(--border-primary)';
+            if (e.dataTransfer.files.length) {
+                $('#fileInput').files = e.dataTransfer.files;
+                $('#fileDropText').textContent = `선택된 파일: ${e.dataTransfer.files[0].name}`;
+                $('#shareSubmitBtn').disabled = false;
+            }
+        });
+
+        // 파일 선택 처리
+        $('#fileInput').addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                $('#fileDropText').textContent = `선택된 파일: ${e.target.files[0].name}`;
+                $('#shareSubmitBtn').disabled = false;
+            } else {
+                $('#fileDropText').textContent = '파일을 드래그하거나 클릭하여 선택하세요';
+                $('#shareSubmitBtn').disabled = true;
+            }
+        });
+
+        // 링크 입력 처리
+        $('#linkInput').addEventListener('input', (e) => {
+            $('#shareSubmitBtn').disabled = !e.target.value.trim();
+        });
+
+        // 공유코드로 페이지 접근 처리
+        $('#shareCodeInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                $('#shareCodeConfirmBtn').click();
+            }
+        });
+
+        // 공유코드 확인 버튼 클릭
+        $('#shareCodeConfirmBtn').addEventListener('click', () => {
+            const code = $('#shareCodeInput').value.trim();
+            if (!code) {
+                showNotification('공유 코드를 입력해주세요', 'error');
+                return;
+            }
+
+            // 링크 처리를 위해 서버로 요청
+            window.location.href = `/page/share/${code}`;
+        });
+
+        // 공유하기 버튼 클릭
+        $('#shareSubmitBtn').addEventListener('click', () => {
+            const remainingCnt = parseInt($('#remainingInput').value) || 1;
+            if (remainingCnt < 1 || remainingCnt > 99) {
+                showNotification('공유 가능 횟수는 1~99 사이 값이어야 합니다', 'error');
+                return;
+            }
+
+            // 링크 모드인 경우
+            if ($('#linkInputWrap').classList.contains('hidden') === false) {
+                const link = $('#linkInput').value.trim();
+                if (!link) {
+                    showNotification('링크를 입력해주세요', 'error');
+                    return;
+                }
+
+                fetch('/share/link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ link, remainingCnt })
+                })
+                .then(res => res.json())
+                .then(data => displayShareResult(data))
+                .catch(() => showNotification('공유 생성에 실패했습니다', 'error'));
+            } 
+            // 파일 모드인 경우
+            else {
+                const fileInput = $('#fileInput');
+                if (!fileInput.files.length) {
+                    showNotification('파일을 선택해주세요', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                formData.append('remainingCnt', remainingCnt);
+
+                fetch('/share/file', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => displayShareResult(data))
+                .catch(() => showNotification('공유 생성에 실패했습니다', 'error'));
+            }
+        });
+
+        // 공유 결과 표시 함수
+        function displayShareResult(data) {
+            $('#shareResultWrap').classList.remove('hidden');
+            $('#shareResultCode').value = data.code;
+            $('#shareCreateDate').textContent = new Date(data.createDate).toLocaleString();
+            $('#shareExpireDate').textContent = new Date(data.expireDate).toLocaleString();
+            $('#shareRemainingCnt').textContent = data.remainingCnt;
+
+            // 복사 버튼 설정
+            $('#copyCodeBtn').addEventListener('click', () => {
+                const codeInput = $('#shareResultCode');
+                codeInput.select();
+                document.execCommand('copy');
+                showNotification('코드가 복사되었습니다', 'success');
+            });
+        }
 
         fetchMemos();
     });

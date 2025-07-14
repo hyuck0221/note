@@ -37,7 +37,12 @@ class SharePageController(private val shareQueryService: ShareQueryService) {
 
             ShareType.LINK -> {
                 val link = body.content as String
-                return "redirect:$link"
+                val redirectUrl = if (!link.startsWith("http://") && !link.startsWith("https://")) {
+                    "http://$link"
+                } else {
+                    link
+                }
+                return "redirect:$redirectUrl"
             }
 
             else -> ResponseEntity(HttpStatus.NOT_FOUND)
