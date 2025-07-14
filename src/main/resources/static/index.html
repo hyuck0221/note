@@ -276,6 +276,10 @@
             transition: transform var(--transition-normal);
         }
 
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
         .sidebar-header {
             padding: var(--spacing-lg);
             border-bottom: 1px solid var(--border-secondary);
@@ -407,6 +411,8 @@
             flex-direction: column;
             padding: var(--spacing-2xl);
             gap: var(--spacing-lg);
+            min-height: 0;      /* allow flex item to shrink */
+            overflow-y: auto;   /* enable scrolling when content is long */
         }
 
         .memo-title-input {
@@ -435,7 +441,7 @@
             border: 1px solid var(--border-primary);
             border-radius: var(--radius-lg);
             background: var(--surface-primary);
-            overflow: hidden;
+            overflow: auto;
             box-shadow: var(--shadow-sm);
         }
 
@@ -733,6 +739,10 @@
                 grid-template-columns: 1fr;
             }
 
+            .app-content.sidebar-collapsed {
+                grid-template-columns: 0 1fr;
+            }
+
             .sidebar {
                 position: fixed;
                 top: 64px;
@@ -802,6 +812,9 @@
             border-bottom: 1px solid var(--border-primary) !important;
             background: var(--surface-secondary) !important;
             padding: var(--spacing-sm) !important;
+            position: sticky !important;
+            top: 0;
+            z-index: 10;
         }
 
         .toastui-editor-defaultUI .te-toolbar button,
@@ -822,10 +835,30 @@
             color: var(--text-primary) !important;
         }
 
+
         .toastui-editor-defaultUI .te-preview,
         .toastui-editor-dark .te-preview {
             background: var(--surface-primary) !important;
             color: var(--text-primary) !important;
+        }
+
+        /* Sticky toolbar for Toast UI Editor v3+ */
+        .toastui-editor-toolbar {
+            position: sticky !important;
+            top: 0;
+            z-index: 20;
+            background: var(--surface-secondary) !important;
+            border-bottom: 1px solid var(--border-primary) !important;
+        }
+
+        /* Toolbar moved out of editor should fill the width */
+        .toolbar-moved {
+            width: 100%;
+        }
+
+        /* --- Ensure memo pane grows when sidebar is collapsed (all breakpoints) --- */
+        .app-content.sidebar-collapsed {
+            grid-template-columns: 0 1fr !important;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1110,6 +1143,16 @@
             return new Date(obj);
         }
 
+        // Move the Toast UI toolbar outside the scrollable editor so it never scrolls away
+        function moveToolbar() {
+            const toolbar = memoEditorContainer.querySelector('.te-toolbar');
+            if (toolbar && !toolbar.classList.contains('toolbar-moved')) {
+                const memoDetailElem = document.getElementById('memoDetail');
+                memoDetailElem.insertBefore(toolbar, memoEditorContainer);
+                toolbar.classList.add('toolbar-moved');
+            }
+        }
+
         // Initialize or reinitialize the ToastUI editor
         function initEditor(content = '') {
             return new toastui.Editor({
@@ -1192,6 +1235,7 @@
 
         updateThemeIcon();
         let memoEditor = initEditor('');
+        moveToolbar();
 
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -1214,13 +1258,24 @@
             const currentContent = memoEditor.getMarkdown();
             memoEditor.destroy();
             memoEditor = initEditor(currentContent);
+            moveToolbar();
             applyEditorThemeClass();
         });
 
         const toggleSidebar = $('#toggleSidebar');
         const sidebar = $('.sidebar');
         toggleSidebar.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+            if (isMobile) {
+                // 모바일: 기존 슬라이드 방식
+                sidebar.classList.toggle('open');
+            } else {
+                // 데스크톱: 접힘/펼침
+                sidebar.classList.toggle('collapsed');
+                document.querySelector('.app-content')
+                    .classList.toggle('sidebar-collapsed');
+            }
         });
 
         const saveBtn = $('#saveBtn');
