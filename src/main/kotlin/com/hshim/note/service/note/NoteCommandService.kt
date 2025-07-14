@@ -31,13 +31,17 @@ class NoteCommandService(
         return NoteResponse(note)
     }
 
-    fun updateTitle(code: String, title: String) {
-        noteRepository.findByIdOrNull(code)
+    fun updateTitle(code: String, title: String): NoteResponse {
+        return noteRepository.findByIdOrNull(code)
             ?.apply { this.title = title }
+            ?.let { NoteResponse(it) }
+            ?: throw Exception("note not found.")
     }
 
-    fun updateContent(code: String, content: String?) {
-        noteRepository.findByIdOrNull(code)
+    fun updateContent(code: String, content: String?): NoteResponse {
+        return noteRepository.findByIdOrNull(code)
             ?.apply { this.content = content ?: "" }
+            ?.let { NoteResponse(it) }
+            ?: throw Exception("note not found.")
     }
 }

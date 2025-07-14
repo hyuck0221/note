@@ -4,859 +4,1090 @@
     <meta charset="UTF-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-    <meta name="color-scheme" content="light only"/>
-    <meta name="supported-color-schemes" content="light"/>
+    <meta name="color-scheme" content="light dark"/>
+    <meta name="supported-color-schemes" content="light dark"/>
     <title>온라인 메모장</title>
     <style>
-        html,
-        body {
-          padding-top: env(safe-area-inset-top);
-          padding-bottom: env(safe-area-inset-bottom);
-        }
-        /* Settings modal styling */
-        #settingsModal .invite-dialog {
-            width: 40%;
-            max-width: 400px;
-            padding: 20px;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-        /* Grid layout for settings items: two columns */
-        #settingsModal .setting-item {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            grid-gap: 4px 10px;
-            align-items: start;
-            margin-bottom: 12px;
-        }
-
-        /* Make description sit below label and stay in first column */
-        #settingsModal .setting-item .desc {
-            grid-column: 1 / 2;
-            grid-row: 2;
-            margin: 0;
-        }
-
-        #settingsModal .setting-item > div {
-            text-align: left;
-            margin: 0;
-            padding: 0;
-        }
-
-        #settingsModal .setting-item label,
-        #settingsModal .setting-item .desc {
-            margin-left: 0;
-        }
-        #settingsModal .setting-item label {
-            font-weight: bold;
-        }
-        #settingsModal .setting-item .desc {
-            display: block;
-            font-size: 12px;
-            color: #888;
-            margin-top: 8px;
-            margin-bottom: 8px;
-        }
-        #settingsModal .setting-item label input[type="checkbox"] {
-            margin-right: 8px;
-        }
-
-        /* Client integration status text styling */
-        #settingsModal .invite-dialog .client-status {
-            grid-column: 1 / -1;
-            margin: 4px 0 0;
-            font-size: 12px;
-            color: var(--content-text);
-        }
-
-
-
-        /* Disabled state styling */
-        #settingsModal .setting-item input:disabled,
-        #settingsModal .setting-item select:disabled {
-            opacity: 0.5;
-            background-color: #ddd;
-            cursor: not-allowed;
-        }
-        #settingsModal .setting-item input[type="number"],
-        #settingsModal .setting-item select,
-        #settingsModal .setting-item button {
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 4px 8px;
-            background-color: var(--content-bg);
-            color: var(--content-text);
-            font-size: 14px;
-        }
-        #settingsModal .setting-item button {
-            cursor: pointer;
-        }
-
+        /* ---------- Design Tokens ---------- */
         :root {
-            --bg-color: #fefefe;
-            --text-color: #333333;
-            --sidebar-bg: #e8eaed;
-            --sidebar-text: #2c2c2c;
-            --content-bg: #ffffff;
-            --content-text: #1a1a1a;
-            color-scheme: light only;
+            /* Light Theme */
+            --bg-primary: #FAFBFC;
+            --bg-secondary: #F8F9FA;
+            --surface-primary: #FFFFFF;
+            --surface-secondary: #F1F3F4;
+            --surface-elevated: #FFFFFF;
+            --surface-overlay: rgba(255, 255, 255, 0.95);
+
+            --text-primary: #1A1A1A;
+            --text-secondary: #6B7280;
+            --text-tertiary: #9CA3AF;
+            --text-accent: #4338CA;
+
+            --accent-primary: #6366F1;
+            --accent-secondary: #818CF8;
+            --accent-hover: #4F46E5;
+            --accent-pressed: #4338CA;
+
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+
+            --border-primary: rgba(0, 0, 0, 0.08);
+            --border-secondary: rgba(0, 0, 0, 0.05);
+            --border-focus: var(--accent-primary);
+
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --radius-full: 9999px;
+
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 24px;
+            --spacing-2xl: 32px;
+
+            --font-xs: 0.75rem;
+            --font-sm: 0.875rem;
+            --font-base: 1rem;
+            --font-lg: 1.125rem;
+            --font-xl: 1.25rem;
+            --font-2xl: 1.5rem;
+
+            --line-height-tight: 1.25;
+            --line-height-normal: 1.5;
+            --line-height-relaxed: 1.625;
+
+            --backdrop-blur: blur(20px);
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.2s ease;
+            --transition-slow: 0.3s ease;
         }
 
+        /* Dark Theme */
         body.dark-mode {
-            --bg-color: #181a1b;
-            --text-color: #e8e6e3;
-            --sidebar-bg: #242526;
-            --sidebar-text: #b8babb;
-            --content-bg: #1c1e1f;
-            --content-text: #d3d6d8;
+            --bg-primary: #0A0A0A;
+            --bg-secondary: #111111;
+            --surface-primary: #1A1A1A;
+            --surface-secondary: #2A2A2A;
+            --surface-elevated: #262626;
+            --surface-overlay: rgba(26, 26, 26, 0.95);
+
+            --text-primary: #FAFAFA;
+            --text-secondary: #A1A1AA;
+            --text-tertiary: #71717A;
+            --text-accent: #A78BFA;
+
+            --accent-primary: #8B5CF6;
+            --accent-secondary: #A78BFA;
+            --accent-hover: #7C3AED;
+            --accent-pressed: #6D28D9;
+
+            --success: #34D399;
+            --warning: #FBBF24;
+            --error: #F87171;
+
+            --border-primary: rgba(255, 255, 255, 0.1);
+            --border-secondary: rgba(255, 255, 255, 0.05);
+            --border-focus: var(--accent-primary);
+
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
         }
 
-        body.dark-mode .memo-title,
-        body.dark-mode .memo-content {
-            background-color: var(--content-bg);
-            color: var(--content-text);
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            height: 100vh;
-            overflow-x: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Smooth theme transition */
-        body,
-        .sidebar,
-        .topbar,
-        .content,
-        .memo-title,
-        .memo-content,
-        .invite-dialog {
-            transition: background-color 0.5s ease, color 0.5s ease;
-        }
-
-        .sidebar {
-            background-color: var(--sidebar-bg);
-            color: var(--sidebar-text);
-        }
-
-
-        .memo-title,
-        .memo-content {
-            background-color: #fafafa;
-            color: var(--sidebar-text);
-            border-radius: 12px;
-        }
-
-        #memoDetail {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            position: relative;
-        }
-
-        /* Save notification */
-        .save-notif {
-            position: absolute;
-            font-size: 12px;
-            background: rgba(0, 0, 0, 0.6);
-            color: #fff;
-            padding: 2px 6px;
-            border-radius: 3px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-
-        .save-notif.show {
-            opacity: 1;
-        }
-
-        .memo-content {
-            flex: 1;
-            overflow-y: auto;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE10+ */
-            box-shadow: inset 0 -20px 20px -20px var(--content-bg);
-            position: relative; /* for overlay */
-        }
-
-        .memo-content::-webkit-scrollbar {
-            display: none; /* Chrome/Safari/Webkit */
-        }
-
-        /* Limit editor height and enable internal scrolling */
-        .memo-editor {
-            flex: 1 1 auto;
-            min-width: 0;
-            height: calc(100vh - 150px) !important;
-            max-height: calc(100vh - 150px);
-            overflow-y: auto;
-        }
-
-        /* Prevent body from scrolling vertically */
-        body {
-            overflow-y: hidden;
-        }
-
-
-        @media (max-width: 768px) {
-            .sidebar {
-                position: absolute;
-                left: -250px;
-                top: 0;
-                bottom: 0;
-                width: 250px;
-                transition: left 0.3s ease;
-                z-index: 1000;
-            }
-
-            .sidebar.open {
-                left: 0;
-            }
-
-            .app {
-                position: relative;
-            }
-        }
-
-        /* 화면이 넓을 때 토글 버튼 숨기기 */
-        @media (min-width: 769px) {
-            #toggleSidebar {
-                display: none;
-            }
-        }
-
+        /* ---------- Base Reset ---------- */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: var(--font-base);
+            line-height: var(--line-height-normal);
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            transition: color var(--transition-normal), background-color var(--transition-normal);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ---------- Custom Scrollbar ---------- */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-primary);
+            border-radius: var(--radius-full);
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary);
+            background-clip: padding-box;
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
+        /* ---------- Utility Classes ---------- */
+        .hidden {
+            display: none !important;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* ---------- Animations ---------- */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ---------- Layout ---------- */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .topbar {
+            height: 64px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-lg);
+            background: var(--surface-overlay);
+            backdrop-filter: var(--backdrop-blur);
+            border-bottom: 1px solid var(--border-secondary);
+            z-index: 1000;
+        }
+
+        .topbar-left,
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .logo {
+            font-size: var(--font-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .logo::before {
+            content: '📝';
+            font-size: var(--font-xl);
+        }
+
+        .app-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            overflow: hidden;
+        }
+
+        /* ---------- Sidebar ---------- */
+        .sidebar {
+            background: var(--surface-primary);
+            border-right: 1px solid var(--border-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform var(--transition-normal);
+        }
+
+        .sidebar-header {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-secondary);
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: var(--spacing-md) var(--spacing-lg);
+            padding-left: 40px;
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            background: var(--surface-secondary);
+            color: var(--text-primary);
+            font-size: var(--font-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: var(--spacing-md);
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-tertiary);
+            font-size: var(--font-sm);
+        }
+
+        .sidebar-controls {
+            padding: var(--spacing-md) var(--spacing-lg);
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .memo-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-sm);
+        }
+
+        .memo-item {
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-xs);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            border: 1px solid transparent;
+            user-select: none;
+        }
+
+        .memo-item:hover {
+            background: var(--surface-secondary);
+            border-color: var(--border-primary);
+        }
+
+        .memo-item.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .memo-item.active .memo-preview {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .memo-title {
+            font-weight: 500;
+            font-size: var(--font-sm);
+            line-height: var(--line-height-tight);
+            margin-bottom: var(--spacing-xs);
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .memo-preview {
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+            line-height: var(--line-height-normal);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .memo-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: var(--spacing-sm);
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+        }
+
+        .memo-item.active .memo-meta {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar-footer {
+            padding: var(--spacing-lg);
+            border-top: 1px solid var(--border-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* ---------- Content Area ---------- */
+        .content {
+            background: var(--bg-secondary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .memo-detail {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: var(--spacing-2xl);
+            gap: var(--spacing-lg);
+        }
+
+        .memo-title-input {
+            font-size: var(--font-2xl);
+            font-weight: 600;
+            padding: var(--spacing-md) var(--spacing-lg);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            background: var(--surface-primary);
+            color: var(--text-primary);
+            transition: all var(--transition-fast);
+        }
+
+        .memo-title-input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .memo-title-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .memo-editor-container {
+            flex: 1;
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            background: var(--surface-primary);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .memo-metadata {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--surface-secondary);
+            border-radius: var(--radius-lg);
+            font-size: var(--font-xs);
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: var(--spacing-2xl);
+            color: var(--text-tertiary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: var(--spacing-lg);
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: var(--font-xl);
+            font-weight: 500;
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-secondary);
+        }
+
+        .empty-state-description {
+            font-size: var(--font-sm);
+            line-height: var(--line-height-relaxed);
+            max-width: 400px;
+        }
+
+        /* ---------- Buttons ---------- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            font-size: var(--font-sm);
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--surface-secondary);
+            color: var(--text-secondary);
+            border-color: var(--border-primary);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--surface-primary);
+            color: var(--text-primary);
+            border-color: var(--border-primary);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .btn-ghost:hover:not(:disabled) {
+            background: var(--surface-secondary);
+            color: var(--text-primary);
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: var(--radius-md);
+        }
+
+        .btn-sm {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: var(--font-xs);
+        }
+
+        .btn-lg {
+            padding: var(--spacing-md) var(--spacing-xl);
+            font-size: var(--font-base);
+        }
+
+        /* ---------- Modals ---------- */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-normal);
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--surface-primary);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: fadeIn var(--transition-normal) ease;
+        }
+
+        .modal-header {
+            padding: var(--spacing-xl);
+            border-bottom: 1px solid var(--border-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: var(--font-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all var(--transition-fast);
+        }
+
+        .modal-close:hover {
+            background: var(--surface-secondary);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: var(--spacing-xl);
+        }
+
+        .modal-footer {
+            padding: var(--spacing-xl);
+            border-top: 1px solid var(--border-secondary);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-sm);
+        }
+
+        /* ---------- Form Elements ---------- */
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            font-size: var(--font-sm);
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            background: var(--surface-secondary);
+            color: var(--text-primary);
+            font-size: var(--font-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .form-checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-primary);
+        }
+
+        /* ---------- Notifications ---------- */
         .notification {
             position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
+            top: var(--spacing-xl);
+            right: var(--spacing-xl);
+            background: var(--surface-primary);
+            color: var(--text-primary);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-primary);
+            z-index: 10001;
             opacity: 0;
-            transition: opacity 0.5s;
-            pointer-events: none;
-            z-index: 3000;
+            transition: opacity var(--transition-slow);
         }
 
         .notification.show {
             opacity: 1;
         }
 
-        .topbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 50px;
-            background-color: var(--sidebar-bg);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 10px;
-            z-index: 1001;
+        .notification.success {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
         }
 
-        .app {
-            margin-top: 50px;
-            display: flex;
-            flex: 1;
+        .notification.error {
+            background: var(--error);
+            color: white;
+            border-color: var(--error);
         }
 
-        .sidebar {
-            width: 250px;
-            background-color: var(--sidebar-bg);
-            border-right: 1px solid #333;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-header {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #333;
-        }
-
-        .add-btn {
-            font-size: 24px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--sidebar-text);
-        }
-
-        .memo-list {
-            list-style: none;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        .memo-list li {
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #2a2a2a;
-            color: var(--sidebar-text);
-            position: relative;
-        }
-
-        .delete-btn {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 12px;
-            color: #888;
-            cursor: pointer;
-        }
-
-        .delete-btn:hover {
-            color: #f55;
-        }
-
-        .memo-list li.active {
-            background: #333;
-            color: #fff;
-        }
-
-        /* Highlight the list item where the dragged memo will be inserted */
-        .memo-list li.drag-over {
-            border-top: 2px solid #007BFF;
-        }
-
-        .content {
-            flex: 1;
-            position: relative;
-            padding: 20px;
-        }
-
-        .memo-title {
-            width: 100%;
-            font-size: 24px;
-            border: none;
-            outline: none;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 4px;
-        }
-
-        .memo-content {
-            width: 100%;
-            flex: 1;
-            overflow-y: auto;
-            outline: none;
-            padding: 10px;
-            border-radius: 4px;
-        }
-
-        .memo-dates {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            font-size: 10px;
-            color: var(--sidebar-text);
-        }
-
-        .no-memo {
-            color: #555;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Ensure memo detail panel hides when .hidden is applied */
-        #memoDetail.hidden {
-            display: none;
-        }
-
-
-        /* Invite modal overlay and dialog */
-        .invite-modal.hidden {
-            display: none;
-        }
-
-        .invite-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-
-        .invite-modal .invite-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .invite-modal .invite-dialog {
-            position: relative;
-            background-color: var(--content-bg);
-            color: var(--content-text);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            min-width: 280px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* Dialog buttons for invite/client dialogs */
-        .invite-dialog button {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 4px;
-            background-color: var(--sidebar-bg);
-            color: var(--sidebar-text);
-            cursor: pointer;
-            font-size: 14px;
-            margin: 4px;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        .invite-dialog button:hover {
-            background-color: var(--sidebar-text);
-            color: var(--sidebar-bg);
-        }
-
-
-        /* Always-visible menu button for each memo */
-        .menu-btn {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        /* Context menu for memo list items with show/hide animation */
-        .item-menu {
-            position: absolute;
-            background-color: var(--content-bg);
-            color: var(--content-text);
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            z-index: 2000;
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: opacity 0.2s ease, transform 0.2s ease;
-            pointer-events: none;
-        }
-
-        .item-menu:not(.hidden) {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        .item-menu .option {
-            padding: 8px 12px;
-            cursor: pointer;
-        }
-
-        .item-menu .option:hover {
-            background-color: rgba(0, 0, 0, 0.05);
-        }
-
-        .item-menu .delete-option {
-            color: #f55;
-        }
-
-        .invite-modal .invite-close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            font-size: 16px;
-            cursor: pointer;
-            color: var(--content-text);
-        }
-
-        .invite-modal .invite-code {
-            font-size: 20px;
-            margin-bottom: 15px;
-            user-select: none;
-        }
-
-        .invite-modal .invite-qr {
-            width: 150px;
-            height: 150px;
-            margin-bottom: 15px;
-        }
-
-        .invite-modal .invite-copy-link {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--content-text);
-            margin-top: 10px;
-        }
-
-        .spinner {
-            border: 4px solid #e0e0e0;
-            border-top: 4px solid var(--text-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Theme icon and animation */
-        .theme-icon {
+        /* ---------- Loading States ---------- */
+        .loading {
             display: inline-block;
-            font-size: 24px;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-            opacity: 1;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-primary);
+            border-radius: 50%;
+            border-top-color: var(--accent-primary);
+            animation: spin 1s linear infinite;
         }
 
-        .theme-icon.rotate {
-            transform: rotate(360deg);
-            opacity: 0;
-        }
-
-        /* Terms-of-Use modal styles */
-        .terms-modal.hidden {
-            display: none;
-        }
-
-        .terms-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .terms-modal.show {
-            opacity: 1;
-        }
-
-        .terms-dialog {
-            background-color: var(--content-bg);
-            color: var(--content-text);
-            padding: 20px;
-            border-radius: 8px;
-            max-width: 500px;
-            width: 80%;
-            animation: slideDown 0.3s ease;
-            display: flex;
-            flex-direction: column;
-        }
-
-        @keyframes slideDown {
-            from {
-                transform: translateY(-20px);
-                opacity: 0;
+        /* ---------- Responsive Design ---------- */
+        @media (max-width: 768px) {
+            .app-content {
+                grid-template-columns: 1fr;
             }
-            to {
-                transform: translateY(0);
-                opacity: 1;
+
+            .sidebar {
+                position: fixed;
+                top: 64px;
+                left: 0;
+                bottom: 0;
+                width: 300px;
+                z-index: 1000;
+                transform: translateX(-100%);
+                box-shadow: var(--shadow-xl);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .memo-detail {
+                padding: var(--spacing-lg);
+            }
+
+            .topbar {
+                padding: 0 var(--spacing-md);
+            }
+
+            .logo {
+                font-size: var(--font-base);
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: var(--spacing-lg);
             }
         }
 
-        .terms-dialog h2 {
-            text-align: center;
-            font-size: 24px;
-            margin-bottom: 16px;
+        @media (max-width: 480px) {
+            .topbar {
+                height: 56px;
+            }
+
+            .app-content {
+                height: calc(100vh - 56px);
+            }
+
+            .sidebar {
+                top: 56px;
+                width: 280px;
+            }
+
+            .memo-detail {
+                padding: var(--spacing-md);
+                gap: var(--spacing-md);
+            }
+
+            .memo-title-input {
+                font-size: var(--font-xl);
+            }
         }
 
-        .terms-content {
-            font-size: 16px;
-            text-align: left;
-            margin-bottom: 24px;
-            max-height: 300px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            line-height: 1.5;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            box-shadow: inset 0 -20px 20px -20px var(--content-bg);
-            position: relative;
-        }
-
-        .terms-content::-webkit-scrollbar {
-            display: none;
-        }
-
-        .terms-content ul,
-        .terms-content ol {
-            margin-left: 20px;
-            padding-left: 0;
-        }
-
-        .terms-content li {
-            margin-bottom: 6px;
-        }
-
-        .terms-content code {
-            background: #f5f5f5;
-            padding: 2px 4px;
-            border-radius: 4px;
-        }
-
-        .terms-confirm {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            align-self: center;
-        }
-
-        /* Light Mode Editor Overrides */
-        .toastui-editor-defaultUI {
-            background-color: #ffffff;
-            color: #1a1a1a;
-        }
-
-        .toastui-editor-defaultUI .toastui-editor-ww-editor .ProseMirror,
-        .toastui-editor-defaultUI .toastui-editor-md-container,
-        .toastui-editor-defaultUI .toastui-editor-md-input {
-            background-color: #ffffff !important;
-            color: #1a1a1a !important;
-        }
-
-        .toastui-editor-defaultUI .te-toolbar {
-            background-color: #e8eaed !important;
-            color: #2c2c2c !important;
-        }
-
-        .toastui-editor-defaultUI .te-toolbar button {
-            color: #2c2c2c !important;
-        }
-
-        /* Dark Mode Editor Overrides */
-        .toastui-editor-dark {
-            background-color: #1c1e1f;
-            color: #d3d6d8;
-        }
-
-        .toastui-editor-dark .toastui-editor-ww-editor .ProseMirror,
-        .toastui-editor-dark .toastui-editor-md-container,
-        .toastui-editor-dark .toastui-editor-md-input {
-            background-color: #1c1e1f !important;
-            color: #d3d6d8 !important;
-        }
-
-        .toastui-editor-dark .te-toolbar {
-            background-color: #242526 !important;
-            color: #b8babb !important;
-        }
-
-        .toastui-editor-dark .te-toolbar button {
-            color: #b8babb !important;
-        }
-
-        /* Smooth transition for editor theme change */
+        /* ---------- Toast UI Editor Customization ---------- */
         .toastui-editor-defaultUI,
         .toastui-editor-dark {
-            transition: background-color 0.5s ease, color 0.5s ease;
+            border: none !important;
+            background: transparent !important;
         }
 
-        .toastui-editor-defaultUI .toastui-editor-ww-editor .ProseMirror,
-        .toastui-editor-dark .toastui-editor-ww-editor .ProseMirror,
-        .toastui-editor-defaultUI .toastui-editor-md-container,
-        .toastui-editor-dark .toastui-editor-md-container,
-        .toastui-editor-defaultUI .toastui-editor-md-input,
-        .toastui-editor-dark .toastui-editor-md-input,
         .toastui-editor-defaultUI .te-toolbar,
         .toastui-editor-dark .te-toolbar {
-            transition: background-color 0.5s ease, color 0.5s ease;
+            border-bottom: 1px solid var(--border-primary) !important;
+            background: var(--surface-secondary) !important;
+            padding: var(--spacing-sm) !important;
         }
 
-        /* Allow editor container to shrink below its tool width */
-        .content,
-        .memo-editor,
-        .toastui-editor-defaultUI,
-        .toastui-editor-dark {
-            min-width: 0;
+        .toastui-editor-defaultUI .te-toolbar button,
+        .toastui-editor-dark .te-toolbar button {
+            border-radius: var(--radius-sm) !important;
+            margin: 2px !important;
+            transition: all var(--transition-fast) !important;
         }
 
-        /* Ensure dark-mode editor fills available height */
-        /* Share‑dialog active mode button */
-        #modeLinkBtn.active, #modeFileBtn.active {
-            background:#333;
-            color:#fff;
+        .toastui-editor-defaultUI .te-toolbar button:hover,
+        .toastui-editor-dark .te-toolbar button:hover {
+            background: var(--surface-primary) !important;
         }
 
-        .toastui-editor-dark,
-        .toastui-editor-defaultUI {
-          display: flex;
-          flex-direction: column;
-          height: 100% !important;
-        }
-        .toastui-editor-dark .toastui-editor-ww-editor,
-        .toastui-editor-dark .toastui-editor-md-container {
-          flex: 1 1 auto;
-          min-height: 0;
-          overflow-y: auto;
+        .toastui-editor-defaultUI .te-md-container,
+        .toastui-editor-dark .te-md-container {
+            background: var(--surface-primary) !important;
+            color: var(--text-primary) !important;
         }
 
+        .toastui-editor-defaultUI .te-preview,
+        .toastui-editor-dark .te-preview {
+            background: var(--surface-primary) !important;
+            color: var(--text-primary) !important;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.css"/>
     <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
-    <style>
-        /* Wrap toolbar items on narrow widths */
-        .toastui-editor-defaultUI .te-toolbar,
-        .toastui-editor-dark .te-toolbar {
-            display: flex !important;
-            flex-wrap: wrap !important;
-        }
-
-        /* Smaller toolbar buttons */
-        .toastui-editor-defaultUI .te-toolbar button,
-        .toastui-editor-dark .te-toolbar button {
-            padding: 4px !important;
-            width: 32px !important;
-            height: 32px !important;
-            margin-bottom: 4px !important;
-        }
-
-        /* Smaller SVG icons */
-        .toastui-editor-defaultUI .te-toolbar button svg,
-        .toastui-editor-dark .te-toolbar button svg {
-            width: 16px !important;
-            height: 16px !important;
-        }
-    </style>
 </head>
 <body>
 <script>
-  (function() {
-    var storedTheme = localStorage.getItem('theme') || 'dark-mode';
-    document.body.classList.add(storedTheme);
-  })();
+    (function () {
+        var storedTheme = localStorage.getItem('theme') || 'dark-mode';
+        document.body.classList.add(storedTheme);
+    })();
 </script>
-<div class="topbar">
-    <button id="toggleSidebar" class="add-btn">☰</button>
-    <button id="themeToggle" class="add-btn">
-        <span id="themeIcon" class="theme-icon"></span>
-    </button>
-    <button id="saveBtn" class="add-btn" title="저장">💾</button>
-</div>
-<div class="app">
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <input id="codeInput"
-                   type="text"
-                   placeholder="코드 등록"
-                   autocomplete="off"
-                   style="flex:1; margin: 0 5px; padding:5px; border:1px solid #555; border-radius:3px; background-color: var(--sidebar-bg); color: var(--sidebar-text);"/>
-            <button id="addBtn" class="add-btn">+</button>
+
+<div class="app-container">
+    <!-- Top Bar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <button id="toggleSidebar" class="btn btn-ghost btn-icon">
+                <span>☰</span>
+            </button>
+            <a href="#" class="logo">온라인 메모장</a>
         </div>
-        <ul id="memoList" class="memo-list"></ul>
-        <div class="sidebar-footer"
-             style="margin-top:auto; padding:5px 10px; font-size:12px; color:var(--sidebar-text); display:flex; justify-content:space-between;">
-            <button id="settingsBtn" class="add-btn" style="font-size:14px;">설정</button>
-            <button id="shareBtn" class="add-btn" title="공유" style="font-size:18px;">🔗</button>
+        <div class="topbar-right">
+            <button id="themeToggle" class="btn btn-ghost btn-icon" title="테마 변경">
+                <span id="themeIcon">🌙</span>
+            </button>
+            <button id="saveBtn" class="btn btn-primary btn-sm" title="저장">
+                <span>💾</span>
+                <span>저장</span>
+            </button>
         </div>
     </div>
-    <div class="content">
-        <div id="memoDetail" class="memo-detail hidden">
-            <input id="memoTitle"
-                   class="memo-title"
-                   type="text"
-                   autocomplete="off"/>
-            <div id="memoEditor" class="memo-editor"></div>
-            <div id="memoDates" class="memo-dates">
-                <small>생성 | <span id="createDate"></span> <br> 수정 | <span id="updateDate"></span></small>
-            </div>
-        </div>
-        <div id="noMemo" class="no-memo hidden" style="text-align:center; color: var(--sidebar-text); margin-top:20px;">
-            메모 없음
-        </div>
-    </div>
-</div>
-<div id="shareModal" class="invite-modal hidden">
-    <div class="invite-overlay"></div>
-    <div class="invite-dialog" style="min-width:300px;">
-        <button id="shareClose" class="invite-close">×</button>
 
-        <!-- 단계 선택 -->
-        <div id="shareStageSelect">
-            <button id="receiveBtn" style="margin:6px;">공유받기</button>
-            <button id="createBtn"  style="margin:6px;">공유하기</button>
-        </div>
-
-        <!-- 공유받기 -->
-        <div id="shareStageReceive" class="hidden" style="display:flex; flex-direction:column; gap:8px;">
-            <input id="shareCodeInput" type="text" placeholder="코드 입력" style="padding:6px;"/>
-            <button id="shareCodeConfirmBtn">확인</button>
-        </div>
-
-        <!-- 공유하기 -->
-        <div id="shareStageCreate" class="hidden" style="display:flex; flex-direction:column; gap:8px;">
-            <div style="display:flex; gap:8px; justify-content:center;">
-                <button id="modeLinkBtn">링크</button>
-                <button id="modeFileBtn">파일</button>
+    <!-- Main Content -->
+    <div class="app-content">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="search-container">
+                    <input id="codeInput" class="search-input" type="text" placeholder="새 메모 코드 입력..."
+                           autocomplete="off" maxlength="8"/>
+                    <span class="search-icon">🔍</span>
+                </div>
+                <div class="sidebar-controls">
+                    <button id="addBtn" class="btn btn-primary btn-sm" title="메모 추가">
+                        <span>➕</span>
+                        <span>추가</span>
+                    </button>
+                </div>
             </div>
 
-            <div id="linkInputWrap" class="hidden">
-                <input id="linkInput" type="text" placeholder="링크 입력" style="width:100%; padding:6px;"/>
+            <div class="memo-list" id="memoList">
+                <!-- Memo items will be populated here -->
             </div>
 
-            <div id="fileInputWrap" class="hidden" style="border:2px dashed #ccc; padding:20px; text-align:center;">
-                <input id="fileInput" type="file" style="display:none;"/>
-                <p id="fileDropText">여기에 드래그하거나 클릭하여 파일 선택</p>
+            <div class="sidebar-footer">
+                <button id="settingsBtn" class="btn btn-ghost btn-sm" title="설정">
+                    <span>⚙️</span>
+                    <span>설정</span>
+                </button>
+                <button id="shareBtn" class="btn btn-ghost btn-sm" title="공유">
+                    <span>🔗</span>
+                    <span>공유</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <div id="memoDetail" class="memo-detail hidden">
+                <input id="memoTitle" class="memo-title-input" type="text" placeholder="메모 제목을 입력하세요..."
+                       autocomplete="off"/>
+                <div id="memoEditor" class="memo-editor-container"></div>
+                <div class="memo-metadata">
+                    <div id="memoDates">
+                        <span>생성: <span id="createDate">-</span></span>
+                        <span>수정: <span id="updateDate">-</span></span>
+                    </div>
+                    <div class="save-status">
+                        <span id="saveStatus" class="hidden">저장됨</span>
+                    </div>
+                </div>
             </div>
 
-            <label style="display:flex; align-items:center; gap:6px;">
-                <input type="checkbox" id="remainingChk"/> 조회가능횟수
-                <input type="number" id="remainingInput" min="1" style="width:80px;" disabled/>
-            </label>
-
-            <button id="shareSubmitBtn" disabled>공유하기</button>
-
-            <!-- 결과 -->
-            <div id="shareResultWrap" class="hidden" style="margin-top:16px; text-align:center;">
-                <div id="shareResultText" style="white-space:pre-wrap; font-size:14px;"></div>
-                <img id="shareResultQR" style="margin-top:10px; width:180px; height:180px;" src=""/>
+            <div id="noMemo" class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <div class="empty-state-title">메모가 없습니다</div>
+                <div class="empty-state-description">
+                    새로운 메모를 추가하여 시작하세요.<br>
+                    왼쪽 사이드바에서 메모 코드를 입력하고 추가 버튼을 클릭하세요.
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Share Modal -->
+<div id="shareModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">메모 공유</h3>
+            <button id="shareClose" class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="shareStageSelect">
+                <div class="form-group">
+                    <div style="display: flex; gap: var(--spacing-sm); justify-content: center;">
+                        <button id="receiveBtn" class="btn btn-secondary">공유받기</button>
+                        <button id="createBtn" class="btn btn-primary">공유하기</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="shareStageReceive" class="hidden">
+                <div class="form-group">
+                    <label class="form-label">공유 코드</label>
+                    <input id="shareCodeInput" class="form-input" type="text" placeholder="공유 코드를 입력하세요"/>
+                </div>
+                <button id="shareCodeConfirmBtn" class="btn btn-primary">확인</button>
+            </div>
+
+            <div id="shareStageCreate" class="hidden">
+                <div class="form-group">
+                    <div style="display: flex; gap: var(--spacing-sm); justify-content: center;">
+                        <button id="modeLinkBtn" class="btn btn-secondary">링크</button>
+                        <button id="modeFileBtn" class="btn btn-secondary">파일</button>
+                    </div>
+                </div>
+
+                <div id="linkInputWrap" class="hidden">
+                    <div class="form-group">
+                        <label class="form-label">링크</label>
+                        <input id="linkInput" class="form-input" type="text" placeholder="공유할 링크를 입력하세요"/>
+                    </div>
+                </div>
+
+                <div id="fileInputWrap" class="hidden">
+                    <div class="form-group">
+                        <label class="form-label">파일</label>
+                        <div style="border: 2px dashed var(--border-primary); border-radius: var(--radius-md); padding: var(--spacing-2xl); text-align: center; cursor: pointer;">
+                            <input id="fileInput" type="file" style="display: none;"/>
+                            <p id="fileDropText" style="color: var(--text-secondary);">파일을 드래그하거나 클릭하여 선택하세요</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="remainingChk"/>
+                        <label for="remainingChk">조회 가능 횟수 제한</label>
+                        <input type="number" id="remainingInput" class="form-input" min="1"
+                               style="width: 80px; margin-left: auto;" disabled/>
+                    </div>
+                </div>
+
+                <button id="shareSubmitBtn" class="btn btn-primary" disabled>공유하기</button>
+
+                <div id="shareResultWrap" class="hidden" style="margin-top: var(--spacing-xl); text-align: center;">
+                    <div id="shareResultText"
+                         style="white-space: pre-wrap; font-size: var(--font-sm); margin-bottom: var(--spacing-md);"></div>
+                    <img id="shareResultQR" style="width: 180px; height: 180px; border-radius: var(--radius-md);" src=""
+                         alt="QR 코드"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">설정</h3>
+            <button id="settingsClose" class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="autoSaveEnable"/>
+                    <label for="autoSaveEnable">자동 저장 활성화</label>
+                </div>
+                <input type="number" id="autoSaveIntervalInput" class="form-input" min="10" max="240" placeholder="60"
+                       style="margin-top: var(--spacing-sm);" disabled/>
+                <small style="color: var(--text-tertiary);">자동 저장 간격 (초)</small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">테마</label>
+                <select id="themeSelect" class="form-select">
+                    <option value="light">라이트 모드</option>
+                    <option value="dark">다크 모드</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">클라이언트 연동</label>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span id="clientStatus" style="color: var(--text-secondary);">미연동</span>
+                    <button id="clientIntegrationBtn" class="btn btn-secondary btn-sm">연결</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="resetListBtn" class="btn btn-secondary">메모 목록 초기화</button>
+        </div>
+    </div>
+</div>
+
+<!-- Client Integration Modal -->
+<div id="clientIntegrationModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">클라이언트 연동</h3>
+            <button id="clientDialogClose" class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="createClientBtn" class="btn btn-primary"
+                 style="margin: var(--spacing-sm); width: calc(100% - var(--spacing-lg));">새 클라이언트 생성
+            </div>
+            <div id="connectClientBtn" class="btn btn-secondary"
+                 style="margin: var(--spacing-sm); width: calc(100% - var(--spacing-lg));">기존 클라이언트 연결
+            </div>
+
+            <div id="clientConnectForm" class="hidden">
+                <div class="form-group">
+                    <label class="form-label">클라이언트 코드</label>
+                    <input id="clientCodeInput" class="form-input" type="text" placeholder="클라이언트 코드를 입력하세요"/>
+                </div>
+                <button id="clientCodeConfirmBtn" class="btn btn-primary">확인</button>
+            </div>
+
+            <div id="clientConnectStatus" class="hidden"
+                 style="margin-top: var(--spacing-md); padding: var(--spacing-md); background: var(--surface-secondary); border-radius: var(--radius-md); color: var(--text-secondary);"></div>
+
+            <button id="clientConnectExecuteBtn" class="btn btn-primary hidden" style="margin-top: var(--spacing-md);">
+                연결 실행
+            </button>
+            <button id="clientDialogBackBtn" class="btn btn-secondary hidden" style="margin-top: var(--spacing-md);">
+                뒤로
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Terms Modal -->
+<div id="termsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="termsTitle" class="modal-title">이용약관</h3>
+        </div>
+        <div class="modal-body">
+            <div id="termsContent"
+                 style="max-height: 400px; overflow-y: auto; line-height: var(--line-height-relaxed);"></div>
+        </div>
+        <div class="modal-footer">
+            <button id="termsConfirm" class="btn btn-primary">확인</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // Persist selected memo across reloads
     const activeCodeKey = 'activeMemoCode';
@@ -870,24 +1101,33 @@
         const $ = selector => document.querySelector(selector);
         const $$ = selector => Array.from(document.querySelectorAll(selector));
 
+        // Safe date parser: handles numeric-string epoch and ISO strings
+        function toDate(obj) {
+            if (obj == null) return new Date(NaN);
+            if (typeof obj === 'string' && /^\d+$/.test(obj)) {
+                return new Date(Number(obj));
+            }
+            return new Date(obj);
+        }
+
         // Initialize or reinitialize the ToastUI editor
         function initEditor(content = '') {
-          return new toastui.Editor({
-            el: $('#memoEditor'),
-            height: '100%',
-            width: '100%',
-            initialEditType: 'wysiwyg',
-            previewStyle: 'vertical',
-            toolbarItems: [
-              ['heading', 'bold', 'italic', 'strike'],
-              ['hr', 'quote'],
-              ['ul', 'ol', 'task', 'table'],
-              ['link', 'code', 'codeblock']
-            ],
-            hideModeSwitch: true,
-            initialValue: content,
-            theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
-          });
+            return new toastui.Editor({
+                el: $('#memoEditor'),
+                height: '100%',
+                width: '100%',
+                initialEditType: 'wysiwyg',
+                previewStyle: 'vertical',
+                toolbarItems: [
+                    ['heading', 'bold', 'italic', 'strike'],
+                    ['hr', 'quote'],
+                    ['ul', 'ol', 'task', 'table'],
+                    ['link', 'code', 'codeblock']
+                ],
+                hideModeSwitch: true,
+                initialValue: content,
+                theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+            });
         }
 
         const connectCodeKey = 'connectClientCode';
@@ -905,11 +1145,8 @@
                         } else {
                             connectClientResponseData = data;
                             const returnedCodes = data.noteCodes;
-                            // Load previously stored order
                             const stored = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
-                            // Keep only codes that still exist, preserving original order
                             const merged = stored.map(o => o.code).filter(code => returnedCodes.includes(code));
-                            // Append any new codes at the end
                             returnedCodes.forEach(code => {
                                 if (!merged.includes(code)) merged.push(code);
                             });
@@ -931,11 +1168,9 @@
         const themeToggle = $('#themeToggle');
         const themeIcon = $('#themeIcon');
 
-        // Editor container reference and theme helper
         const memoEditorContainer = $('#memoEditor');
 
         function applyEditorThemeClass() {
-            // Find the editor root wrapper and toggle UI classes
             const wrapper = memoEditorContainer.querySelector('.toastui-editor-defaultUI, .toastui-editor-dark');
             if (!wrapper) return;
             if (document.body.classList.contains('dark-mode')) {
@@ -955,35 +1190,31 @@
             }
         }
 
-        // Initialize icon
         updateThemeIcon();
-        // Initialize WYSIWYG Markdown editor (Toast UI)
         let memoEditor = initEditor('');
-        // Auto-save on Ctrl+S / Cmd+S
-        // Auto-save on Ctrl+S / Cmd+S
+
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                updateContent();
+                if (document.activeElement === memoTitle) {
+                    updateTitle();
+                } else {
+                    updateContent();
+                }
             }
         });
-        // Apply initial editor theme class
+
         applyEditorThemeClass();
         themeToggle.addEventListener('click', () => {
-            themeIcon.classList.add('rotate');
-            setTimeout(() => {
-                themeIcon.classList.remove('rotate');
-                document.body.classList.toggle('dark-mode');
-                document.body.classList.toggle('light-mode');
-                const newTheme = document.body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode';
-                localStorage.setItem('theme', newTheme);
-                updateThemeIcon();
-                // Reinitialize editor to apply new theme
-                const currentContent = memoEditor.getMarkdown();
-                memoEditor.destroy();
-                memoEditor = initEditor(currentContent);
-                applyEditorThemeClass();
-            }, 300);
+            document.body.classList.toggle('dark-mode');
+            document.body.classList.toggle('light-mode');
+            const newTheme = document.body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode';
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon();
+            const currentContent = memoEditor.getMarkdown();
+            memoEditor.destroy();
+            memoEditor = initEditor(currentContent);
+            applyEditorThemeClass();
         });
 
         const toggleSidebar = $('#toggleSidebar');
@@ -991,12 +1222,13 @@
         toggleSidebar.addEventListener('click', () => {
             sidebar.classList.toggle('open');
         });
+
         const saveBtn = $('#saveBtn');
         saveBtn.addEventListener('click', () => {
+            updateTitle();
             updateContent();
         });
 
-        // Close sidebar when content area is clicked (useful on small screens)
         const contentArea = $('.content');
         contentArea.addEventListener('click', () => {
             if (sidebar.classList.contains('open')) {
@@ -1004,9 +1236,7 @@
             }
         });
 
-        // For drag-and-drop reordering
         let draggedCode = null;
-        // Load stored note code objects and derive codes array
         const clientIdKey = 'clientId';
         const noteCodesKey = 'noteCodes';
         const noteCodeObjsKey = noteCodesKey;
@@ -1014,8 +1244,7 @@
 
         let clientId = localStorage.getItem(clientIdKey);
 
-        // Notification logic
-        function showNotification(msg) {
+        function showNotification(msg, type = 'success') {
             let notif = document.querySelector('.notification');
             if (!notif) {
                 notif = document.createElement('div');
@@ -1023,10 +1252,17 @@
                 document.body.appendChild(notif);
             }
             notif.textContent = msg;
-            notif.classList.add('show');
-            setTimeout(() => {
+            notif.className = `notification ${type} show`;
+
+            // If a hide timer is already running, reset it
+            if (notif._hideTimeout) {
+                clearTimeout(notif._hideTimeout);
+            }
+
+            // Start a new 1‑second timer before fade‑out
+            notif._hideTimeout = setTimeout(() => {
                 notif.classList.remove('show');
-            }, 2000);
+            }, 1000); // wait 1 s, then CSS takes care of fade‑out
         }
 
         const isInitial = !clientId;
@@ -1047,7 +1283,6 @@
                 });
         }
 
-        // Show the Terms-of-Use modal
         function showTerms(data) {
             const termsModal = document.getElementById('termsModal');
             const termsTitle = document.getElementById('termsTitle');
@@ -1055,7 +1290,6 @@
             const termsConfirm = document.getElementById('termsConfirm');
             termsTitle.textContent = data.title;
             termsContent.innerHTML = marked.parse(data.content);
-            termsModal.classList.remove('hidden');
             termsModal.classList.add('show');
             termsConfirm.onclick = () => {
                 localStorage.setItem('notificationNumber', String(data.number));
@@ -1070,8 +1304,14 @@
         const updateDateElem = $('#updateDate');
         const addBtn = $('#addBtn');
         const codeInput = $('#codeInput');
+        // Restrict to uppercase letters & digits, max 8 chars
+        codeInput.addEventListener('input', () => {
+            codeInput.value = codeInput.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, '')
+                .substring(0, 8);
+        });
         const noMemoElem = $('#noMemo');
-        // Settings modal logic
         const settingsBtn = $('#settingsBtn');
         const settingsModal = $('#settingsModal');
         const settingsClose = settingsModal ? $('#settingsClose') : null;
@@ -1081,9 +1321,7 @@
         const resetListBtn = settingsModal ? $('#resetListBtn') : null;
 
         if (settingsBtn) {
-            // Open/close settings modal and update client integration UI
             settingsBtn.addEventListener('click', () => {
-                // Initialize current values
                 const savedInterval = parseInt(localStorage.getItem('autoSaveInterval'));
                 if (!isNaN(savedInterval)) {
                     autoSaveEnable.checked = true;
@@ -1095,8 +1333,7 @@
                     autoSaveInput.value = '';
                 }
                 themeSelect.value = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-                settingsModal.classList.remove('hidden');
-                // Update client integration UI
+                settingsModal.classList.add('show');
                 const isLinked = !!connectClientResponseData;
                 $('#clientStatus').textContent = isLinked
                     ? `연동중: ${connectClientResponseData.code}`
@@ -1105,22 +1342,22 @@
                 btn.textContent = isLinked ? '연결해제' : '연결';
                 btn.onclick = () => {
                     if (connectClientResponseData) {
-                        // Disconnect without reload
                         localStorage.removeItem(connectCodeKey);
                         connectClientResponseData = null;
                         const statusElem = $('#clientStatus');
                         statusElem.textContent = '미연동';
                         btn.textContent = '연결';
                     } else {
-                        settingsModal.classList.add('hidden');
+                        settingsModal.classList.remove('show');
                         openClientIntegrationDialog();
                     }
                 };
             });
-            settingsClose.addEventListener('click', () => settingsModal.classList.add('hidden'));
-            settingsModal.querySelector('.invite-overlay').addEventListener('click', () => settingsModal.classList.add('hidden'));
+            settingsClose.addEventListener('click', () => settingsModal.classList.remove('show'));
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) settingsModal.classList.remove('show');
+            });
 
-            // Auto-save checkbox toggle
             autoSaveEnable.addEventListener('change', e => {
                 if (e.target.checked) {
                     autoSaveInput.disabled = false;
@@ -1137,7 +1374,7 @@
                     }
                 }
             });
-            // Auto-save interval input
+
             autoSaveInput.addEventListener('change', e => {
                 let v = parseInt(e.target.value);
                 if (isNaN(v) || v < 10) v = 10;
@@ -1149,23 +1386,18 @@
                 }
             });
 
-            // Theme select
             themeSelect.addEventListener('change', e => {
                 const val = e.target.value;
-                // Toggle body classes
                 document.body.classList.toggle('dark-mode', val === 'dark');
                 document.body.classList.toggle('light-mode', val === 'light');
-                // Persist theme
                 localStorage.setItem('theme', val === 'dark' ? 'dark-mode' : 'light-mode');
                 updateThemeIcon();
-                // Reinitialize editor to apply new theme
                 const currentContent = memoEditor.getMarkdown();
                 memoEditor.destroy();
                 memoEditor = initEditor(currentContent);
                 applyEditorThemeClass();
             });
 
-            // Reset list button
             resetListBtn.addEventListener('click', () => {
                 if (confirm('정말 초기화 하시겠습니까?')) {
                     localStorage.removeItem(noteCodesKey);
@@ -1174,17 +1406,17 @@
             });
         }
 
-        // --- Client Integration Dialog Logic (attach listeners only once) ---
         function openClientIntegrationDialog() {
             const m = document.getElementById('clientIntegrationModal');
-            m.classList.remove('hidden');
+            m.classList.add('show');
             ['createClientBtn', 'connectClientBtn'].forEach(id => document.getElementById(id).classList.remove('hidden'));
             ['clientConnectForm', 'clientConnectStatus', 'clientConnectExecuteBtn', 'clientDialogBackBtn'].forEach(id => document.getElementById(id).classList.add('hidden'));
         }
 
         $('#clientDialogClose').addEventListener('click', () => {
-            $('#clientIntegrationModal').classList.add('hidden');
+            $('#clientIntegrationModal').classList.remove('show');
         });
+
         $('#createClientBtn').addEventListener('click', () => {
             fetch('/connect/client?' + codes.map(c => 'noteCodes=' + encodeURIComponent(c)).join('&'), {method: 'POST'})
                 .then(res => res.json())
@@ -1198,18 +1430,20 @@
                     ['createClientBtn', 'connectClientBtn'].forEach(id => $('#' + id).classList.add('hidden'));
                 });
         });
+
         $('#connectClientBtn').addEventListener('click', () => {
             $('#clientConnectForm').classList.remove('hidden');
             ['createClientBtn', 'connectClientBtn'].forEach(id => $('#' + id).classList.add('hidden'));
             $('#clientDialogBackBtn').classList.remove('hidden');
         });
+
         $('#clientDialogBackBtn').addEventListener('click', () => {
             location.reload();
         });
+
         $('#clientCodeConfirmBtn').addEventListener('click', () => {
             const input = $('#clientCodeInput').value.trim();
             const statusElem = $('#clientConnectStatus');
-            // Clear previous status
             statusElem.classList.add('hidden');
             fetch('/connect/client', {headers: {'Connect-Code': input}})
                 .then(res => res.json().catch(() => null))
@@ -1230,6 +1464,7 @@
                     statusElem.classList.remove('hidden');
                 });
         });
+
         $('#clientConnectExecuteBtn').addEventListener('click', () => {
             const data = connectClientResponseData;
             localStorage.setItem(connectCodeKey, data.code);
@@ -1247,25 +1482,39 @@
 
         let codes = noteCodeObjs.map(o => o.code);
         let memos = [];
-        // Remove declaration of let activeCode = null; (now loaded from storage)
+        let autoSaveTimerId = null;
+
         if (codes.length === 0) {
             memoDetail.classList.add('hidden');
             noMemoElem.classList.remove('hidden');
         }
 
+        function setupAutoSave() {
+            if (autoSaveTimerId !== null) {
+                clearInterval(autoSaveTimerId);
+            }
+            const interval = parseInt(localStorage.getItem('autoSaveInterval'));
+            if (!isNaN(interval)) {
+                autoSaveTimerId = setInterval(() => {
+                    if (activeCode) {
+                        updateContent();
+                    }
+                }, interval * 1000);
+            }
+        }
+
+        setupAutoSave();
+
         function fetchMemos() {
-            // If there are no saved codes, hide detail and invite, show “no memo” and skip fetching
             if (codes.length === 0) {
                 sidebarList.innerHTML = '';
                 memoDetail.classList.add('hidden');
                 noMemoElem.classList.remove('hidden');
                 return;
             }
-            // Otherwise fetch and render
             fetch('/note/list?' + codes.map(c => 'codes=' + encodeURIComponent(c)).join('&'))
                 .then(res => res.json())
                 .then(data => {
-                    // Remove any stored codes that were not returned by the server
                     const returnedCodes = data.map(m => m.code);
                     const invalidCodes = codes.filter(c => !returnedCodes.includes(c));
                     if (invalidCodes.length) {
@@ -1273,19 +1522,15 @@
                         localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
                         codes = noteCodeObjs.map(o => o.code);
                     }
-                    // Order memos according to stored codes sequence
                     const fetched = data;
                     memos = codes.map(c => fetched.find(m => m.code === c)).filter(m => m);
                     renderList();
-                    // If after fetch there are no memos, treat as no codes
                     if (memos.length === 0) {
                         memoDetail.classList.add('hidden');
                         noMemoElem.classList.remove('hidden');
                         return;
                     }
-                    // Hide “no memo” and show invite button
                     noMemoElem.classList.add('hidden');
-                    // If no stored selection or it's invalid, select first
                     if (!activeCode || !memos.find(m => m.code === activeCode)) {
                         activeCode = memos[0].code;
                     }
@@ -1297,532 +1542,207 @@
         function renderList() {
             sidebarList.innerHTML = '';
             memos.forEach(m => {
-                const li = document.createElement('li');
-                li.textContent = m.title || '(제목없음)';
-                // Enable drag-and-drop
+                const li = document.createElement('div');
+                li.className = 'memo-item';
                 li.setAttribute('draggable', true);
-                // Highlight potential drop target
+
+                const preview = m.content ? m.content.substring(0, 100) : '';
+                const createDate = new Date(m.createDate).toLocaleDateString();
+                const updateDate = new Date(m.updateDate).toLocaleDateString();
+
+                li.innerHTML = `
+                    <div class="memo-title">${m.title || '(제목없음)'}</div>
+                    <div class="memo-preview">${preview}</div>
+                    <div class="memo-meta">
+                        <span>수정: ${updateDate}</span>
+                        <span>생성: ${createDate}</span>
+                    </div>
+                `;
+
+                if (m.code === activeCode) {
+                    li.classList.add('active');
+                }
+
+                li.addEventListener('click', () => selectMemo(m.code));
+
+                // Drag and drop functionality
+                li.addEventListener('dragstart', function (e) {
+                    draggedCode = m.code;
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
                 li.addEventListener('dragenter', function (e) {
-                    if (this.dataset.code !== draggedCode) {
-                        this.classList.add('drag-over');
+                    e.preventDefault();
+                    if (draggedCode !== m.code) {
+                        li.style.backgroundColor = 'var(--surface-secondary)';
                     }
                 });
+
                 li.addEventListener('dragleave', function (e) {
-                    this.classList.remove('drag-over');
+                    li.style.backgroundColor = '';
                 });
-                li.dataset.code = m.code;
-                li.addEventListener('dragstart', function (e) {
-                    draggedCode = this.dataset.code;
-                });
+
                 li.addEventListener('dragover', function (e) {
                     e.preventDefault();
                 });
+
                 li.addEventListener('drop', function (e) {
-                    // Remove highlight from all items
-                    document.querySelectorAll('.memo-list li.drag-over').forEach(el => el.classList.remove('drag-over'));
                     e.preventDefault();
-                    const targetCode = this.dataset.code;
-                    const from = noteCodeObjs.findIndex(o => o.code === draggedCode);
-                    const to = noteCodeObjs.findIndex(o => o.code === targetCode);
-                    noteCodeObjs.splice(to, 0, noteCodeObjs.splice(from, 1)[0]);
-                    localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
-                    codes = noteCodeObjs.map(o => o.code);
-                    fetchMemos();
-                });
-                li.addEventListener('click', () => selectMemo(m.code));
-                if (m.code === activeCode) li.classList.add('active');
-                const menuBtn = document.createElement('span');
-                menuBtn.textContent = '⋮';
-                menuBtn.classList.add('menu-btn');
-                menuBtn.addEventListener('click', e => {
-                    e.stopPropagation();
-                    const menu = document.getElementById('itemMenu');
-                    if (currentMenuCode === m.code && !menu.classList.contains('hidden')) {
-                        menu.classList.add('hidden');
-                        currentMenuCode = null;
-                        return;
+                    li.style.backgroundColor = '';
+                    if (draggedCode && draggedCode !== m.code) {
+                        reorderMemos(draggedCode, m.code);
                     }
-                    currentMenuCode = m.code;
-                    const rect = menuBtn.getBoundingClientRect();
-                    menu.style.top = rect.bottom + 'px';
-                    menu.style.left = rect.right + 'px';
-                    menu.classList.remove('hidden');
+                    draggedCode = null;
                 });
-                li.appendChild(menuBtn);
+
                 sidebarList.appendChild(li);
             });
         }
 
+        function reorderMemos(draggedCode, targetCode) {
+            const draggedIndex = noteCodeObjs.findIndex(o => o.code === draggedCode);
+            const targetIndex = noteCodeObjs.findIndex(o => o.code === targetCode);
+
+            if (draggedIndex !== -1 && targetIndex !== -1) {
+                const draggedItem = noteCodeObjs.splice(draggedIndex, 1)[0];
+                noteCodeObjs.splice(targetIndex, 0, draggedItem);
+                localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+                codes = noteCodeObjs.map(o => o.code);
+                fetchMemos();
+            }
+        }
+
         function selectMemo(code) {
             activeCode = code;
-            localStorage.setItem(activeCodeKey, code);
+            localStorage.setItem(activeCodeKey, activeCode);
             const memo = memos.find(m => m.code === code);
             if (memo) {
                 memoDetail.classList.remove('hidden');
-                memoTitle.disabled = false;
-                memoTitle.value = memo.title;
+                noMemoElem.classList.add('hidden');
+                memoTitle.value = memo.title || '';
                 memoEditor.setMarkdown(memo.content || '');
-                if (createDateElem) {
-                    const created = new Date(memo.createDate);
-                    createDateElem.textContent = created.toLocaleString('ko-KR');
-                }
-                if (updateDateElem) {
-                    const updated = new Date(memo.updateDate);
-                    updateDateElem.textContent = updated.toLocaleString('ko-KR');
-                }
-                updateActiveList();
-            } else {
-                memoTitle.disabled = true;
-                memoDetail.classList.add('hidden');
+                createDateElem.textContent = new Date(memo.createDate).toLocaleString();
+                updateDateElem.textContent = new Date(memo.updateDate).toLocaleString();
+                renderList();
             }
         }
 
-        function updateActiveList() {
-            document.querySelectorAll('.memo-list li').forEach(li => {
-                li.classList.toggle('active', li.dataset.code === activeCode);
-            });
-        }
-
-        memoTitle.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                updateTitle();
-            }
-        });
-        memoTitle.addEventListener('blur', updateTitle);
-        memoTitle.addEventListener('keydown', e => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                updateTitle();
-            }
-        });
-
-        // Remove old memoContent event listeners: now handled by SimpleMDE events and blur
-
-        function updateContent() {
-            if (!activeCode) return; // 선택된 메모가 없으면 저장하지 않음
-            const currentMemo = memos.find(m => m.code === activeCode);
-            const newContent = memoEditor.getMarkdown();
-            if (currentMemo && currentMemo.content === newContent) {
-                return; // 변경사항 없으면 API 호출하지 않음
-            }
-            if (newContent === undefined) return;
-            fetch('/note/' + activeCode + '/content', {
-                method: 'PUT',
-                headers: {'Content-Type': 'text/plain'},
-                body: newContent
-            }).then(() => {
-                fetchMemos();
-                showSaveNotification('content');
-            });
-        }
-
+        // 제목만 저장
         function updateTitle() {
-            const currentMemo = memos.find(m => m.code === activeCode);
-            let newTitle = memoTitle.value.trim();
-            if (!newTitle) newTitle = '제목없음';
-            if (currentMemo && currentMemo.title === newTitle) {
-                return; // 변경사항 없으면 API 호출하지 않음
-            }
-            fetch('/note/' + activeCode + '/title', {
+            if (!activeCode) return;
+            const title = memoTitle.value.trim();
+
+            fetch(`/note/${activeCode}/title`, {
                 method: 'PUT',
-                headers: {'Content-Type': 'text/plain'},
-                body: newTitle
-            }).then(() => {
-                fetchMemos();
-                showSaveNotification('title');
-            });
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({title})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const memo = memos.find(m => m.code === activeCode);
+                    if (memo) {
+                        memo.title = title;
+                        const parsed = toDate(data.updateDate ?? Date.now());
+                        memo.updateDate = parsed.getTime();
+                        updateDateElem.textContent = parsed.toLocaleString();
+                        renderList();
+                    }
+                    showNotification('제목이 저장되었습니다', 'success');
+                })
+                .catch((e) => showNotification('제목 저장에 실패했습니다', 'error'));
         }
 
-        function showSaveNotification(type) {
-            let notif = document.createElement('div');
-            notif.className = 'save-notif';
-            notif.textContent = '저장되었습니다';
-            if (type === 'content') {
-                const container = document.querySelector('.content');
-                container.appendChild(notif);
-                notif.style.top = '5px';
-                notif.style.right = '5px';
-            } else if (type === 'title') {
-                const detail = document.getElementById('memoDetail');
-                detail.appendChild(notif);
-                notif.style.bottom = '5px';
-                notif.style.right = '5px';
+        // 내용만 저장
+        function updateContent() {
+            if (!activeCode) return;
+            const content = memoEditor.getMarkdown();
+
+            fetch(`/note/${activeCode}/content`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({content})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const memo = memos.find(m => m.code === activeCode);
+                    if (memo) {
+                        memo.content = content;
+                        const parsed = toDate(data.updateDate ?? Date.now());
+                        memo.updateDate = parsed.getTime();
+                        updateDateElem.textContent = parsed.toLocaleString();
+                        renderList();
+                    }
+                    showNotification('내용이 저장되었습니다', 'success');
+                })
+                .catch(() => showNotification('내용 저장에 실패했습니다', 'error'));
+        }
+
+        function generateCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let out = '';
+            for (let i = 0; i < 8; i++) {
+                out += chars[Math.floor(Math.random() * chars.length)];
             }
-            // trigger show
-            setTimeout(() => notif.classList.add('show'), 10);
-            // hide and remove
-            setTimeout(() => notif.classList.remove('show'), 2010);
-            setTimeout(() => notif.remove(), 2300);
+            return out;
         }
 
         addBtn.addEventListener('click', () => {
-            addBtn.disabled = true;
-            const input = codeInput.value.trim();
-            const endpoint = input
-                ? `/note/${encodeURIComponent(input)}`
-                : '/note';
+            let code = codeInput.value.trim().toUpperCase()
+                .replace(/[^A-Z0-9]/g, '')
+                .substring(0, 8);
 
-            const headers = {};
-            const stored = localStorage.getItem(connectCodeKey);
-            if (stored) headers['Connect-Code'] = stored;
-            fetch(endpoint, {method: 'POST', headers})
+            // If no code entered, generate one until it is unique
+            if (!code) {
+                do {
+                    code = generateCode();
+                } while (codes.includes(code));
+            } else if (codes.includes(code)) {
+                showNotification('이미 존재하는 코드입니다', 'error');
+                return;
+            }
+
+            fetch(`/note/${code}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({clientId: clientId})
+            })
                 .then(res => res.json())
-                .then(note => {
-                    noteCodeObjs.unshift({code: note.code});
+                .then(() => {
+                    noteCodeObjs.unshift({code}); // 새 메모를 목록 맨 앞에 배치
                     localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
                     codes = noteCodeObjs.map(o => o.code);
-                    activeCode = note.code;
+                    activeCode = code;
+                    localStorage.setItem(activeCodeKey, activeCode);
                     codeInput.value = '';
                     fetchMemos();
+                    showNotification('메모가 추가되었습니다', 'success');
                 })
-                .catch(error => {
-                    console.error(error);
-                })
-                .finally(() => {
-                    addBtn.disabled = false;
+                .catch(() => {
+                    showNotification('메모 추가에 실패했습니다', 'error');
                 });
         });
 
-        // (Moved editor initialization above)
-        fetchMemos();
-// Auto-save timer ID 관리
-        let autoSaveTimerId = null;
-
-        function setupAutoSave() {
-            if (autoSaveTimerId !== null) {
-                clearInterval(autoSaveTimerId);
-                autoSaveTimerId = null;
-            }
-            const savedInterval = parseInt(localStorage.getItem('autoSaveInterval'));
-            if (!isNaN(savedInterval) && savedInterval > 0) {
-                autoSaveTimerId = setInterval(() => {
-                    updateContent();
-                }, savedInterval * 1000);
-            }
-        }
-
-        // 페이지 로드 후 설정값이 있으면 자동저장 시작
-        setupAutoSave();
-        // Invite dialog logic
-        const inviteModal = $('#inviteModal');
-        const inviteOverlay = inviteModal.querySelector('.invite-overlay');
-        const inviteClose = $('#inviteClose');
-        const inviteCodeElem = $('#inviteCode');
-        const inviteQR = $('#inviteQR');
-        const inviteCopyLink = $('#inviteCopyLink');
-
-        function openInvite() {
-            if (!activeCode) return;
-            const qrSpinner = document.getElementById('qrSpinner');
-            qrSpinner.classList.remove('hidden');
-
-            inviteCodeElem.textContent = activeCode;
-            const url = `${window.location.origin}/page/note/invite?code=${encodeURIComponent(activeCode)}`;
-
-            inviteQR.onload = () => qrSpinner.classList.add('hidden');
-            inviteQR.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
-            inviteModal.classList.remove('hidden');
-        }
-
-        function closeInvite() {
-            inviteModal.classList.add('hidden');
-        }
-
-        inviteClose.addEventListener('click', closeInvite);
-        inviteOverlay.addEventListener('click', closeInvite);
-
-        // Copy link button
-        inviteCopyLink.addEventListener('click', () => {
-            const url = `${window.location.origin}/page/note/invite?code=${encodeURIComponent(activeCode)}`;
-            navigator.clipboard.writeText(url);
-            showNotification('링크가 복사되었습니다.');
-        });
-
-        // Click to copy invite code
-        inviteCodeElem.addEventListener('click', () => {
-            navigator.clipboard.writeText(activeCode || '');
-            showNotification('코드가 복사되었습니다.');
-        });
-
-        const itemMenu = $('#itemMenu');
-        const menuInvite = $('#menuInvite');
-        const menuDelete = $('#menuDelete');
-
-        // Hide menu when clicking outside
-        document.addEventListener('click', e => {
-            if (!itemMenu.contains(e.target) && !e.target.classList.contains('menu-btn')) {
-                itemMenu.classList.add('hidden');
-            }
-        });
-
-        menuInvite.addEventListener('click', () => {
-            if (currentMenuCode) {
-                selectMemo(currentMenuCode);
-                openInvite();
-            }
-            itemMenu.classList.add('hidden');
-        });
-
-        menuDelete.addEventListener('click', () => {
-            if (currentMenuCode) {
-                const codeToRemove = currentMenuCode;
-                const storedConnectCode = localStorage.getItem(connectCodeKey);
-                const performLocalRemoval = () => {
-                    noteCodeObjs = noteCodeObjs.filter(o => o.code !== codeToRemove);
-                    localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
-                    codes = noteCodeObjs.map(o => o.code);
-                    fetchMemos();
-                };
-                if (storedConnectCode) {
-                    fetch(`/connect/client/note/codes/${encodeURIComponent(codeToRemove)}`, {
-                        method: 'DELETE',
-                        headers: { 'Connect-Code': storedConnectCode }
-                    })
-                    .then(() => performLocalRemoval())
-                    .catch(err => {
-                        console.error('Failed to remove note code from server', err);
-                        // still perform local removal to keep UI responsive
-                        performLocalRemoval();
-                    });
-                } else {
-                    performLocalRemoval();
-                }
-            }
-            itemMenu.classList.add('hidden');
-        });
-
-        /* ---------- 공유 모달 ---------- */
-        const shareBtn   = $('#shareBtn');
+        // Share functionality
+        const shareBtn = $('#shareBtn');
         const shareModal = $('#shareModal');
         const shareClose = $('#shareClose');
 
-        const stageSelect  = $('#shareStageSelect');
-        const stageReceive = $('#shareStageReceive');
-        const stageCreate  = $('#shareStageCreate');
-
-        const receiveBtn = $('#receiveBtn');
-        const createBtn  = $('#createBtn');
-
-        const shareCodeInput = $('#shareCodeInput');
-        const shareCodeConfirmBtn = $('#shareCodeConfirmBtn');
-
-        const modeLinkBtn = $('#modeLinkBtn');
-        const modeFileBtn = $('#modeFileBtn');
-        const linkInputWrap = $('#linkInputWrap');
-        const fileInputWrap = $('#fileInputWrap');
-        const linkInput  = $('#linkInput');
-        const fileInput  = $('#fileInput');
-        const fileDropText = $('#fileDropText');
-
-        const remainingChk   = $('#remainingChk');
-        const remainingInput = $('#remainingInput');
-
-        const shareSubmitBtn = $('#shareSubmitBtn');
-
-        const shareResultWrap = $('#shareResultWrap');
-        const shareResultText = $('#shareResultText');
-        const shareResultQR   = $('#shareResultQR');
-
-        let currentMode = null;   // 'link' | 'file'
-
-        function openShareModal() {
-            [stageSelect, stageReceive, stageCreate].forEach(el => el.classList.add('hidden'));
-            stageSelect.classList.remove('hidden');
-            shareModal.classList.remove('hidden');
-
-            // reset
-            linkInput.value='';
-            fileInput.value='';
-            fileDropText.textContent='여기에 드래그하거나 클릭하여 파일 선택';
-            shareSubmitBtn.disabled=true;
-            remainingChk.checked=false;
-            remainingInput.disabled=true;
-            remainingInput.value='';
-            shareResultWrap.classList.add('hidden');
-        }
-
-        shareBtn.addEventListener('click', openShareModal);
-        shareClose.addEventListener('click', () => shareModal.classList.add('hidden'));
-        shareModal.querySelector('.invite-overlay').addEventListener('click', () => shareModal.classList.add('hidden'));
-
-        receiveBtn.addEventListener('click', () => {
-            stageSelect.classList.add('hidden');
-            stageReceive.classList.remove('hidden');
-            shareCodeInput.value='';
-            shareCodeInput.focus();
+        shareBtn.addEventListener('click', () => {
+            shareModal.classList.add('show');
         });
 
-        createBtn.addEventListener('click', () => {
-            stageSelect.classList.add('hidden');
-            stageCreate.classList.remove('hidden');
+        shareClose.addEventListener('click', () => {
+            shareModal.classList.remove('show');
         });
 
-        shareCodeConfirmBtn.addEventListener('click', () => {
-            const code = shareCodeInput.value.trim();
-            if (code) location.href = `/page/share/${encodeURIComponent(code)}`;
-        });
-
-        function setMode(mode) {
-            currentMode = mode;
-            modeLinkBtn.classList.toggle('active', mode==='link');
-            modeFileBtn.classList.toggle('active', mode==='file');
-            linkInputWrap.classList.toggle('hidden', mode!=='link');
-            fileInputWrap.classList.toggle('hidden', mode!=='file');
-            validateShareForm();
-        }
-        modeLinkBtn.addEventListener('click', () => setMode('link'));
-        modeFileBtn.addEventListener('click', () => setMode('file'));
-
-        linkInput.addEventListener('input', validateShareForm);
-        fileInput.addEventListener('change', () => {
-            fileDropText.textContent = fileInput.files.length ? fileInput.files[0].name : '파일 선택';
-            validateShareForm();
-        });
-
-        // drag‑and‑drop
-        ['dragenter','dragover'].forEach(evt => {
-            fileInputWrap.addEventListener(evt, e => {
-                e.preventDefault(); e.stopPropagation();
-                fileInputWrap.style.borderColor='#007BFF';
-            });
-        });
-        ['dragleave','drop'].forEach(evt => {
-            fileInputWrap.addEventListener(evt, e => {
-                e.preventDefault(); e.stopPropagation();
-                fileInputWrap.style.borderColor='#ccc';
-                if (evt==='drop' && e.dataTransfer.files.length) {
-                    fileInput.files = e.dataTransfer.files;
-                    fileDropText.textContent = e.dataTransfer.files[0].name;
-                    validateShareForm();
-                }
-            });
-        });
-        fileInputWrap.addEventListener('click', () => fileInput.click());
-
-        remainingChk.addEventListener('change', () => {
-            remainingInput.disabled = !remainingChk.checked;
-            if (!remainingChk.checked) remainingInput.value='';
-        });
-        remainingInput.addEventListener('input', validateShareForm);
-
-        function validateShareForm() {
-            let ok = false;
-            if (currentMode==='link') ok = linkInput.value.trim().length>0;
-            if (currentMode==='file') ok = fileInput.files.length>0;
-            shareSubmitBtn.disabled = !ok;
-        }
-
-        shareSubmitBtn.addEventListener('click', () => {
-            shareSubmitBtn.disabled = true;
-            const params = remainingChk.checked && remainingInput.value
-                ? { remainingCnt: parseInt(remainingInput.value, 10) }
-                : {};
-
-            if (currentMode==='link') {
-                fetch('/share/link', {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({ link: linkInput.value.trim(), ...params })
-                })
-                .then(res => res.json())
-                .then(showShareResult)
-                .finally(() => shareSubmitBtn.disabled=false);
-            } else if (currentMode==='file') {
-                const fd = new FormData();
-                fd.append('file', fileInput.files[0]);
-                if (params.remainingCnt) fd.append('remainingCnt', params.remainingCnt);
-                fetch('/share/file', { method:'POST', body: fd })
-                .then(res => res.json())
-                .then(showShareResult)
-                .finally(() => shareSubmitBtn.disabled=false);
+        shareModal.addEventListener('click', (e) => {
+            if (e.target === shareModal) {
+                shareModal.classList.remove('show');
             }
         });
 
-        function showShareResult(data) {
-            if (!data || !data.code) return;
-            shareResultText.textContent =
-                `코드: ${data.code}\n` +
-                `조회가능횟수: ${data.remainingCnt ?? '무제한'}\n` +
-                `만료: ${new Date(data.expireDate).toLocaleString('ko-KR')}`;
-            const fullUrl = `${location.origin}/page/share/${encodeURIComponent(data.code)}`;
-            shareResultQR.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(fullUrl)}`;
-            shareResultWrap.classList.remove('hidden');
-        }
+        fetchMemos();
     });
 </script>
-<div id="itemMenu" class="item-menu hidden">
-    <div id="menuInvite" class="option">초대</div>
-    <div id="menuDelete" class="option delete-option">삭제</div>
-</div>
-<div id="inviteModal" class="invite-modal hidden">
-    <div class="invite-overlay"></div>
-    <div class="invite-dialog">
-        <button id="inviteClose" class="invite-close">×</button>
-        <div id="inviteCode" class="invite-code"></div>
-        <img id="inviteQR" class="invite-qr" src="" alt="QR Code"/>
-        <div id="qrSpinner" class="spinner hidden"></div>
-        <button id="inviteCopyLink" class="invite-copy-link">📎</button>
-    </div>
-</div>
-<div id="settingsModal" class="invite-modal hidden">
-    <div class="invite-overlay"></div>
-    <div class="invite-dialog">
-        <button id="settingsClose" class="invite-close">×</button>
-        <h2>설정</h2>
-        <div class="setting-list">
-          <div class="setting-item">
-            <label><input type="checkbox" id="autoSaveEnable"> 자동저장 (초)</label>
-            <input type="number" id="autoSaveIntervalInput" min="10" max="240" disabled>
-            <small class="desc">메모 작성 중 자동으로 저장될 시간을 설정합니다. (10~240초)</small>
-          </div>
-          <div class="setting-item">
-            <label for="themeSelect">테마</label>
-            <select id="themeSelect">
-              <option value="light">화이트모드</option>
-              <option value="dark">다크모드</option>
-            </select>
-            <small class="desc">웹페이지의 테마를 선택합니다.</small>
-          </div>
-          <div class="setting-item">
-            <label>클라이언트 연동</label>
-            <button id="clientIntegrationBtn">연결</button>
-            <div id="clientStatus" class="client-status"></div>
-            <small class="desc">클라이언트 와의 메모를 연동하거나 해제합니다.</small>
-          </div>
-          <div class="setting-item">
-            <label>리스트 초기화</label>
-            <button id="resetListBtn">초기화</button>
-            <small class="desc">등록된 메모 리스트를 초기화합니다. 메모 내용은 유지됩니다.</small>
-          </div>
-        </div>
-    </div>
-</div>
-<div id="clientIntegrationModal" class="invite-modal hidden">
-    <div class="invite-overlay"></div>
-    <div class="invite-dialog">
-        <button id="clientDialogClose" class="invite-close">×</button>
-        <h2>클라이언트 연동</h2>
-        <div class="client-dialog-actions">
-            <button id="createClientBtn">생성</button>
-            <button id="connectClientBtn">연결</button>
-        </div>
-        <div id="clientConnectForm" class="hidden" style="margin-top:10px;">
-            <input id="clientCodeInput" type="text" placeholder="코드 입력" style="padding:4px; width:60%;"/>
-            <button id="clientCodeConfirmBtn">확인</button>
-        </div>
-        <div id="clientConnectStatus" class="hidden" style="white-space:pre-wrap; margin-top:10px;"></div>
-        <button id="clientConnectExecuteBtn" class="hidden" style="margin-top:10px;">연결</button>
-        <button id="clientDialogBackBtn" class="hidden" style="margin-top:10px;">돌아가기</button>
-    </div>
-</div>
 </body>
-<!-- Terms-of-Use Modal -->
-<div id="termsModal" class="terms-modal hidden">
-    <div class="terms-dialog">
-        <h2 id="termsTitle"></h2>
-        <div id="termsContent" class="terms-content"></div>
-        <button id="termsConfirm" class="terms-confirm">확인</button>
-    </div>
-</div>
 </html>

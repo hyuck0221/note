@@ -27,14 +27,18 @@ class NoteController(
     @PutMapping("/{code}/title")
     fun updateTitle(
         @PathVariable code: String,
-        @RequestBody title: String,
-    ) = noteCommandService.updateTitle(code, title)
+        @RequestBody request: Map<String, String?>,
+    ): NoteResponse {
+        return noteCommandService.updateTitle(code, request["title"] ?: "제목없음")
+    }
 
     @PutMapping("/{code}/content")
     fun updateContent(
         @PathVariable code: String,
-        @RequestBody content: String?,
-    ) = noteCommandService.updateContent(code, content)
+        @RequestBody request: Map<String, String?>,
+    ): NoteResponse {
+        return noteCommandService.updateContent(code, request["content"])
+    }
 
     @GetMapping("/list")
     fun findAllBy(@RequestParam codes: List<String>): List<NoteResponse> {
