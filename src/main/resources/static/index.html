@@ -259,6 +259,68 @@
             font-size: var(--font-xl);
         }
 
+        /* 공유 결과 화면 스타일 */
+        .share-result-container {
+            text-align: center;
+            padding: var(--spacing-xl) var(--spacing-lg);
+            animation: fadeIn 0.3s ease;
+            max-width: 480px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .share-success-icon {
+            font-size: 48px;
+            margin-bottom: var(--spacing-lg);
+            color: var(--success);
+        }
+
+        .share-result-title {
+            font-size: var(--font-xl);
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+            color: var(--text-primary);
+        }
+
+        .share-code-container {
+            background: var(--surface-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .code-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .generated-code {
+            flex: 1;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: var(--font-xl);
+            font-weight: 700;
+            color: var(--accent-primary);
+            letter-spacing: 2px;
+            text-align: center;
+            user-select: all;
+        }
+
+        .share-code-info {
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+            margin-top: var(--spacing-md);
+        }
+
         .app-content {
             flex: 1;
             display: grid;
@@ -706,6 +768,62 @@
             transition: opacity var(--transition-slow);
         }
 
+        /* 메모 옵션 버튼 스타일 */
+        .note-options-btn {
+            position: absolute;
+            top: var(--spacing-sm);
+            right: var(--spacing-sm);
+            color: var(--text-tertiary);
+            background: transparent;
+            border: none;
+            font-size: var(--font-lg);
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+            opacity: 0.7;
+            transition: all var(--transition-fast);
+        }
+
+        .note-options-btn:hover {
+            background: var(--surface-secondary);
+            color: var(--text-primary);
+            opacity: 1;
+        }
+
+        /* 메모 옵션 메뉴 스타일 */
+        .note-options-menu {
+            position: absolute;
+            top: calc(var(--spacing-sm) + 28px);
+            right: var(--spacing-sm);
+            background: var(--surface-elevated);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            z-index: 10;
+            min-width: 120px;
+            border: 1px solid var(--border-primary);
+        }
+
+        .note-option-item {
+            padding: var(--spacing-md);
+            color: var(--text-primary);
+            font-size: var(--font-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .note-option-item:hover {
+            background: var(--surface-secondary);
+        }
+
         #errorNotification {
             position: fixed;
             top: 64px;
@@ -879,6 +997,7 @@
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.css"/>
     <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 <script>
@@ -1131,6 +1250,40 @@
     </div>
 </div>
 
+<!-- 초대 모달 -->
+<div id="inviteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">메모 초대</h3>
+            <button id="inviteClose" class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">초대 코드</label>
+                <div style="display: flex; gap: var(--spacing-sm);">
+                    <input id="inviteCodeDisplay" class="form-input" type="text" readonly/>
+                    <button id="copyInviteCodeBtn" class="btn btn-secondary" title="코드 복사">복사</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">초대 URL</label>
+                <div style="display: flex; gap: var(--spacing-sm);">
+                    <input id="inviteUrlDisplay" class="form-input" type="text" readonly/>
+                    <button id="copyInviteUrlBtn" class="btn btn-secondary" title="URL 복사">복사</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">QR 코드</label>
+                <div id="qrCodeContainer" style="text-align: center; margin-top: var(--spacing-md);">
+                    <!-- QR 코드가 여기에 생성됩니다 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Terms Modal -->
 <div id="termsModal" class="modal">
     <div class="modal-content">
@@ -1155,6 +1308,15 @@
     var currentMenuCode = null;
 
     document.addEventListener('DOMContentLoaded', () => {
+        // 문서 클릭 시 열린 옵션 메뉴 닫기
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.note-options-btn') && !e.target.closest('.note-options-menu')) {
+                document.querySelectorAll('.note-options-menu').forEach(menu => {
+                    menu.classList.add('hidden');
+                });
+            }
+        });
+
         // Thymeleaf로부터 전달된 에러 메시지 처리
         const errorParam = '[[${errorMessage}]]';
         if (errorParam && errorParam !== '[[${errorMessage}]]') {
@@ -1170,6 +1332,108 @@
                     errorNotification.style.display = 'none';
                 }, 500);
             }, 3000);
+        }
+
+        // 초대 모달 표시 함수
+        function showInviteModal(noteCode) {
+            const inviteModal = document.getElementById('inviteModal');
+            const inviteCodeDisplay = document.getElementById('inviteCodeDisplay');
+            const inviteUrlDisplay = document.getElementById('inviteUrlDisplay');
+            const qrCodeContainer = document.getElementById('qrCodeContainer');
+            const inviteUrl = `${window.location.origin}/page/note/invite?code=${noteCode}`;
+
+            // QRCode 라이브러리가 로드되지 않았는지 확인
+            const isQRCodeLoaded = typeof QRCode !== 'undefined';
+            if (!isQRCodeLoaded) {
+                // QRCode 라이브러리 동적 로드 시도
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+                document.head.appendChild(script);
+
+                // 로딩 메시지 표시
+                qrCodeContainer.innerHTML = '<p style="color: var(--text-secondary);">QR 코드 로딩 중...</p>';
+            }
+
+            // 코드와 URL 표시
+            inviteCodeDisplay.value = noteCode;
+            inviteUrlDisplay.value = inviteUrl;
+
+            // QR 코드 생성
+            qrCodeContainer.innerHTML = '';
+            try {
+                new QRCode(qrCodeContainer, {
+                    text: inviteUrl,
+                    width: 128,
+                    height: 128,
+                    colorDark: document.body.classList.contains('dark-mode') ? '#FFFFFF' : '#000000',
+                    colorLight: document.body.classList.contains('dark-mode') ? '#1A1A1A' : '#FFFFFF',
+                });
+            } catch (error) {
+                console.error('QR 코드 생성 오류:', error);
+                qrCodeContainer.innerHTML = '<p style="color: var(--text-secondary);">QR 코드를 생성할 수 없습니다.</p>';
+            }
+
+            // 모달 표시
+            inviteModal.classList.add('show');
+
+            // 닫기 버튼 이벤트
+            document.getElementById('inviteClose').addEventListener('click', () => {
+                inviteModal.classList.remove('show');
+            });
+
+            // 모달 외부 클릭 시 닫기
+            inviteModal.addEventListener('click', (e) => {
+                if (e.target === inviteModal) {
+                    inviteModal.classList.remove('show');
+                }
+            });
+
+            // 코드 복사 버튼
+            document.getElementById('copyInviteCodeBtn').addEventListener('click', () => {
+                inviteCodeDisplay.select();
+                document.execCommand('copy');
+                showNotification('초대 코드가 복사되었습니다', 'success');
+            });
+
+            // URL 복사 버튼
+            document.getElementById('copyInviteUrlBtn').addEventListener('click', () => {
+                inviteUrlDisplay.select();
+                document.execCommand('copy');
+                showNotification('초대 URL이 복사되었습니다', 'success');
+            });
+        }
+
+        // 메모 삭제 함수
+        function deleteNote(noteCode) {
+            // 로컬스토리지에서 메모 코드 제거
+            noteCodeObjs = noteCodeObjs.filter(o => o.code !== noteCode);
+            localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+            codes = noteCodeObjs.map(o => o.code);
+
+            // connectClientCode가 있으면 서버에서도 삭제
+            const connectCode = localStorage.getItem('connectClientCode');
+            if (connectCode) {
+                fetch(`/connect/client/note/codes/${noteCode}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Connect-Code': connectCode
+                    }
+                }).catch(err => console.error('서버 삭제 실패:', err));
+            }
+
+            // 현재 활성화된 메모가 삭제된 메모인 경우 처리
+            if (activeCode === noteCode) {
+                if (codes.length > 0) {
+                    activeCode = codes[0];
+                    localStorage.setItem(activeCodeKey, activeCode);
+                } else {
+                    activeCode = null;
+                    localStorage.removeItem(activeCodeKey);
+                }
+            }
+
+            showNotification('메모가 삭제되었습니다', 'success');
+            fetchMemos(); // 메모 목록 새로고침
         }
 
         // Utility selectors
@@ -1654,13 +1918,58 @@
                         <span>수정: ${updateDate}</span>
                         <span>생성: ${createDate}</span>
                     </div>
+                    <button class="note-options-btn" title="메모 옵션">⋮</button>
+                    <div class="note-options-menu hidden" data-code="${m.code}">
+                        <div class="note-option-item invite-option">🔗 초대</div>
+                        <div class="note-option-item delete-option">🗑️ 삭제</div>
+                    </div>
                 `;
 
                 if (m.code === activeCode) {
                     li.classList.add('active');
                 }
 
-                li.addEventListener('click', () => selectMemo(m.code));
+                // 메모 항목 클릭 시 선택 처리
+                li.addEventListener('click', (e) => {
+                    // 옵션 버튼이나 메뉴를 클릭한 경우 이벤트 전파 방지
+                    if (e.target.closest('.note-options-btn') || e.target.closest('.note-options-menu')) {
+                        return;
+                    }
+                    selectMemo(m.code);
+                });
+
+                // 옵션 버튼 이벤트 처리
+                const optionsBtn = li.querySelector('.note-options-btn');
+                const optionsMenu = li.querySelector('.note-options-menu');
+
+                optionsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // 현재 열린 다른 메뉴 닫기
+                    document.querySelectorAll('.note-options-menu:not(.hidden)').forEach(menu => {
+                        if (menu !== optionsMenu) {
+                            menu.classList.add('hidden');
+                        }
+                    });
+                    // 현재 메뉴 토글
+                    optionsMenu.classList.toggle('hidden');
+                    currentMenuCode = m.code;
+                });
+
+                // 초대 옵션 클릭 이벤트
+                const inviteOption = li.querySelector('.invite-option');
+                inviteOption.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    optionsMenu.classList.add('hidden');
+                    showInviteModal(m.code);
+                });
+
+                // 삭제 옵션 클릭 이벤트
+                const deleteOption = li.querySelector('.delete-option');
+                deleteOption.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    optionsMenu.classList.add('hidden');
+                    deleteNote(m.code);
+                });
 
                 // Drag and drop functionality
                 li.addEventListener('dragstart', function (e) {
@@ -1805,6 +2114,16 @@
             })
                 .then(res => res.json())
                 .then(() => {
+                            const copyBtn = $('#copyCodeBtn');
+                            const originalText = copyBtn.innerHTML;
+                            copyBtn.innerHTML = '<span>✓</span>';
+                            copyBtn.style.color = 'var(--success)';
+
+                            setTimeout(() => {
+                                copyBtn.innerHTML = originalText;
+                                copyBtn.style.color = '';
+                            }, 2000);
+
                     noteCodeObjs.unshift({code}); // 새 메모를 목록 맨 앞에 배치
                     localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
                     codes = noteCodeObjs.map(o => o.code);
