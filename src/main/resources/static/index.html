@@ -967,10 +967,44 @@
             color: var(--text-primary) !important;
         }
 
-
         .toastui-editor-defaultUI .te-preview,
         .toastui-editor-dark .te-preview {
             background: var(--surface-primary) !important;
+            color: var(--text-primary) !important;
+        }
+
+        /* Custom class to apply dark mode colors while using light mode settings */
+        .dark-mode-colors {
+            /* Apply dark mode colors from the toastui-editor-dark.css */
+            --toastui-editor-main-color: #4b96e6 !important;
+            --toastui-editor-text-color: #e5e5e5 !important;
+            --toastui-editor-bg-color: #121212 !important;
+            --toastui-editor-border-color: #333 !important;
+            --toastui-editor-toolbar-bg-color: #232323 !important;
+            --toastui-editor-toolbar-active-color: #555 !important;
+            --toastui-editor-scrollbar-thumb-color: #666 !important;
+            --toastui-editor-scrollbar-thumb-active-color: #999 !important;
+            --toastui-editor-highlight-color: #fff !important;
+            --toastui-editor-highlight-background-color: #134a8e !important;
+        }
+
+        /* Apply dark mode colors to specific editor elements */
+        .dark-mode-colors .toastui-editor-contents,
+        .dark-mode-colors .ProseMirror {
+            color: var(--text-primary) !important;
+            background-color: var(--surface-primary) !important;
+        }
+
+        .dark-mode-colors .toastui-editor-toolbar,
+        .dark-mode-colors .toastui-editor-defaultUI-toolbar {
+            background-color: var(--surface-secondary) !important;
+            border-bottom: 1px solid var(--border-primary) !important;
+        }
+
+        .dark-mode-colors .toastui-editor-popup,
+        .dark-mode-colors .toastui-editor-context-menu {
+            background-color: var(--surface-elevated) !important;
+            border: 1px solid var(--border-primary) !important;
             color: var(--text-primary) !important;
         }
 
@@ -1498,6 +1532,8 @@
 
         // Initialize or reinitialize the ToastUI editor
         function initEditor(content = '') {
+            // Use theme based on current mode
+            const isDarkMode = document.body.classList.contains('dark-mode');
             return new toastui.Editor({
                 el: $('#memoEditor'),
                 height: '100%',
@@ -1512,7 +1548,8 @@
                 ],
                 hideModeSwitch: true,
                 initialValue: content,
-                theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+                // Use dark theme when in dark mode
+                theme: isDarkMode ? 'dark' : 'light'
             });
         }
 
@@ -1559,12 +1596,13 @@
         function applyEditorThemeClass() {
             const wrapper = memoEditorContainer.querySelector('.toastui-editor-defaultUI, .toastui-editor-dark');
             if (!wrapper) return;
+
+            // Apply dark mode colors only when in dark mode
             if (document.body.classList.contains('dark-mode')) {
-                wrapper.classList.add('toastui-editor-dark');
-                wrapper.classList.remove('toastui-editor-defaultUI');
+                // Add a custom class to handle dark mode colors
+                wrapper.classList.add('dark-mode-colors');
             } else {
-                wrapper.classList.add('toastui-editor-defaultUI');
-                wrapper.classList.remove('toastui-editor-dark');
+                wrapper.classList.remove('dark-mode-colors');
             }
         }
 
