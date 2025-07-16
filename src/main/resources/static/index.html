@@ -974,13 +974,28 @@
             color: var(--text-primary) !important;
         }
 
-        /* Sticky toolbar for Toast UI Editor v3+ */
-        .toastui-editor-toolbar {
-            position: sticky !important;
-            top: 0;
-            z-index: 20;
-            background: var(--surface-secondary) !important;
-            border-bottom: 1px solid var(--border-primary) !important;
+        /* ---------- Sticky Markdown Toolbar ---------- */
+        .sticky-toolbar {
+            position: fixed;
+            top: 64px;       /* height of the .topbar on desktop */
+            left: 320px;     /* sidebar width */
+            right: 0;
+            z-index: 999;    /* above content, below modal (10000) */
+            background: var(--surface-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            padding: var(--spacing-sm);
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        /* When sidebar is collapsed or on mobile, let the toolbar hug the left edge */
+        .sidebar.collapsed ~ .content + #editorToolbarSticky,
+        .app-content.sidebar-collapsed + #editorToolbarSticky,
+        @media (max-width: 768px) {
+            .sticky-toolbar {
+                left: 0;
+                top: 56px;   /* mobile topbar height */
+            }
         }
 
         /* Toolbar moved out of editor should fill the width */
@@ -1029,6 +1044,9 @@
             </button>
         </div>
     </div>
+
+    <!-- Sticky toolbar container for the markdown editor -->
+    <div id="editorToolbarSticky" class="sticky-toolbar hidden"></div>
 
     <!-- Main Content -->
     <div class="app-content">
@@ -1449,15 +1467,34 @@
             return new Date(obj);
         }
 
-        // Move the Toast UI toolbar outside the scrollable editor so it never scrolls away
+        // Move the Toast UI toolbar into the fixed container so it never scrolls away
         function moveToolbar() {
             const toolbar = memoEditorContainer.querySelector('.te-toolbar');
-            if (toolbar && !toolbar.classList.contains('toolbar-moved')) {
-                const memoDetailElem = document.getElementById('memoDetail');
-                memoDetailElem.insertBefore(toolbar, memoEditorContainer);
+            const sticky = document.getElementById('editorToolbarSticky');
+            if (toolbar && !sticky.contains(toolbar)) {
+                sticky.classList.remove('hidden');
+                sticky.appendChild(toolbar);
                 toolbar.classList.add('toolbar-moved');
+                toolbar.style.position = 'static';
+                toolbar.style.background = 'transparent';
+                toolbar.style.border = 'none';
+                toolbar.style.width = '100%';
             }
         }
+
+        // Keep the sticky toolbar correctly aligned when the sidebar toggles or the window resizes
+        function updateStickyLeft() {
+            const sticky = document.getElementById('editorToolbarSticky');
+            if (!sticky) return;
+
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            const sidebarElem = document.querySelector('.sidebar');
+            const collapsed = (sidebarElem && sidebarElem.classList.contains('collapsed')) || isMobile;
+
+            sticky.style.left = collapsed ? '0px' : '320px';
+        }
+
+        window.addEventListener('resize', updateStickyLeft);
 
         // Initialize or reinitialize the ToastUI editor
         function initEditor(content = '') {
@@ -1542,6 +1579,28 @@
         updateThemeIcon();
         let memoEditor = initEditor('');
         moveToolbar();
+        updateStickyLeft();
+        // Fix Toast UI table context‑menu placement after the editor has been scrolled
+        memoEditor.on('contextmenu', () => {
+            // Give Toast UI a tick to render the menu, then reposition if needed
+            setTimeout(() => {
+                const menu = document.querySelector('.toastui-editor-context-menu, .toastui-editor-contextmenu');
+                if (!menu) return;
+                const rect = menu.getBoundingClientRect();
+                let left = rect.left;
+                let top = rect.top;
+
+                if (rect.right > window.innerWidth) {
+                    left = window.innerWidth - rect.width - 8;
+                }
+                if (rect.bottom > window.innerHeight) {
+                    top = window.innerHeight - rect.height - 8;
+                }
+
+                menu.style.left = `${left}px`;
+                menu.style.top = `${top}px`;
+            }, 0);
+        });
 
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -1565,6 +1624,28 @@
             memoEditor.destroy();
             memoEditor = initEditor(currentContent);
             moveToolbar();
+            updateStickyLeft();
+            // Fix Toast UI table context‑menu placement after the editor has been scrolled
+            memoEditor.on('contextmenu', () => {
+                // Give Toast UI a tick to render the menu, then reposition if needed
+                setTimeout(() => {
+                    const menu = document.querySelector('.toastui-editor-context-menu, .toastui-editor-contextmenu');
+                    if (!menu) return;
+                    const rect = menu.getBoundingClientRect();
+                    let left = rect.left;
+                    let top = rect.top;
+
+                    if (rect.right > window.innerWidth) {
+                        left = window.innerWidth - rect.width - 8;
+                    }
+                    if (rect.bottom > window.innerHeight) {
+                        top = window.innerHeight - rect.height - 8;
+                    }
+
+                    menu.style.left = `${left}px`;
+                    menu.style.top = `${top}px`;
+                }, 0);
+            });
             applyEditorThemeClass();
         });
 
@@ -1582,6 +1663,7 @@
                 document.querySelector('.app-content')
                     .classList.toggle('sidebar-collapsed');
             }
+            updateStickyLeft();
         });
 
         const saveBtn = $('#saveBtn');
