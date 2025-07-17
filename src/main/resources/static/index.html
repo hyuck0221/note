@@ -390,6 +390,45 @@
             padding: var(--spacing-sm);
         }
 
+        /* ---------- Folder List ---------- */
+        .folder-list {
+            padding: var(--spacing-sm);
+            border-bottom: 1px solid var(--border-secondary);
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .folder-item {
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-xs);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all var(--transition-fast);
+        }
+
+        .folder-item:hover {
+            background: var(--surface-secondary);
+        }
+
+        .folder-item.active {
+            background: var(--accent-primary);
+            color: #ffffff;
+        }
+
+        .folder-delete {
+            font-size: var(--font-xs);
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+
+        .folder-item:hover .folder-delete {
+            opacity: 1;
+        }
+
         .memo-item {
             padding: var(--spacing-md);
             margin-bottom: var(--spacing-xs);
@@ -473,8 +512,8 @@
             flex-direction: column;
             padding: var(--spacing-2xl);
             gap: var(--spacing-lg);
-            min-height: 0;      /* allow flex item to shrink */
-            overflow-y: auto;   /* enable scrolling when content is long */
+            min-height: 0; /* allow flex item to shrink */
+            overflow-y: auto; /* enable scrolling when content is long */
         }
 
         .memo-title-input {
@@ -1011,10 +1050,10 @@
         /* ---------- Sticky Markdown Toolbar ---------- */
         .sticky-toolbar {
             position: fixed;
-            top: 64px;       /* height of the .topbar on desktop */
-            left: 320px;     /* sidebar width */
+            top: 64px; /* height of the .topbar on desktop */
+            left: 320px; /* sidebar width */
             right: 0;
-            z-index: 999;    /* above content, below modal (10000) */
+            z-index: 999; /* above content, below modal (10000) */
             background: var(--surface-secondary);
             border-bottom: 1px solid var(--border-primary);
             padding: var(--spacing-sm);
@@ -1025,10 +1064,11 @@
         /* When sidebar is collapsed or on mobile, let the toolbar hug the left edge */
         .sidebar.collapsed ~ .content + #editorToolbarSticky,
         .app-content.sidebar-collapsed + #editorToolbarSticky
+
         @media (max-width: 768px) {
             .sticky-toolbar {
                 left: 0;
-                top: 56px;   /* mobile topbar height */
+                top: 56px; /* mobile topbar height */
             }
         }
 
@@ -1097,9 +1137,14 @@
                         <span>➕</span>
                         <span>추가</span>
                     </button>
+                    <button id="addFolderBtn" class="btn btn-secondary btn-sm" title="폴더 추가">
+                        <span>📁</span>
+                        <span>폴더</span>
+                    </button>
                 </div>
             </div>
 
+            <div id="folderList" class="folder-list"></div>
             <div class="memo-list" id="memoList">
                 <!-- Memo items will be populated here -->
             </div>
@@ -1165,7 +1210,8 @@
             <div id="shareStageReceive" class="hidden">
                 <div class="form-group">
                     <label class="form-label">공유 코드</label>
-                    <input id="shareCodeInput" class="form-input" type="text" placeholder="공유 코드를 입력하세요" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"/>
+                    <input id="shareCodeInput" class="form-input" type="text" placeholder="공유 코드를 입력하세요"
+                           autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"/>
                 </div>
                 <button id="shareCodeConfirmBtn" class="btn btn-primary">확인</button>
             </div>
@@ -1181,7 +1227,8 @@
                 <div id="linkInputWrap" class="hidden">
                     <div class="form-group">
                         <label class="form-label">링크</label>
-                        <input id="linkInput" class="form-input" type="text" placeholder="공유할 링크를 입력하세요" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"/>
+                        <input id="linkInput" class="form-input" type="text" placeholder="공유할 링크를 입력하세요"
+                               autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"/>
                     </div>
                 </div>
 
@@ -1336,6 +1383,22 @@
     </div>
 </div>
 
+<!-- Move Folder Modal -->
+<div id="moveFolderModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">폴더에 넣기</h3>
+        </div>
+        <div class="modal-body">
+            <select id="moveFolderSelect" class="form-input" style="width:100%;"></select>
+        </div>
+        <div class="modal-footer">
+            <button id="moveFolderConfirm" class="btn btn-primary">확인</button>
+            <button id="moveFolderCancel" class="btn btn-secondary">취소</button>
+        </div>
+    </div>
+</div>
+
 <!-- Terms Modal -->
 <div id="termsModal" class="modal">
     <div class="modal-content">
@@ -1461,6 +1524,12 @@
             noteCodeObjs = noteCodeObjs.filter(o => o.code !== noteCode);
             localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
             codes = noteCodeObjs.map(o => o.code);
+
+            // 모든 폴더에서 해당 코드 제거
+            folders.forEach(f => {
+                f.codes = f.codes.filter(c => c !== noteCode);
+            });
+            saveFolders();
 
             // connectClientCode가 있으면 서버에서도 삭제
             const connectCode = localStorage.getItem('connectClientCode');
@@ -1631,7 +1700,7 @@
 
                 const rect = menu.getBoundingClientRect();
                 let left = pointerX;
-                let top  = pointerY;
+                let top = pointerY;
 
                 // Prevent overflow off the right / bottom edges
                 if (left + rect.width > window.innerWidth) {
@@ -1643,10 +1712,10 @@
 
                 // Prevent overflow off the left / top edges
                 if (left < 8) left = 8;
-                if (top  < 8) top  = 8;
+                if (top < 8) top = 8;
 
                 menu.style.left = `${left}px`;
-                menu.style.top  = `${top}px`;
+                menu.style.top = `${top}px`;
             }, 0);
         });
 
@@ -1686,7 +1755,7 @@
 
                     const rect = menu.getBoundingClientRect();
                     let left = pointerX;
-                    let top  = pointerY;
+                    let top = pointerY;
 
                     // Prevent overflow off the right / bottom edges
                     if (left + rect.width > window.innerWidth) {
@@ -1698,10 +1767,10 @@
 
                     // Prevent overflow off the left / top edges
                     if (left < 8) left = 8;
-                    if (top  < 8) top  = 8;
+                    if (top < 8) top = 8;
 
                     menu.style.left = `${left}px`;
-                    menu.style.top  = `${top}px`;
+                    menu.style.top = `${top}px`;
                 }, 0);
             });
             applyEditorThemeClass();
@@ -1741,7 +1810,12 @@
         const clientIdKey = 'clientId';
         const noteCodesKey = 'noteCodes';
         const noteCodeObjsKey = noteCodesKey;
-        let noteCodeObjs = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
+        const foldersKey = 'folders';
+        let folders = JSON.parse(localStorage.getItem(foldersKey) || '[]');
+        const activeFolderKey = 'activeFolderId';
+        let activeFolderId = localStorage.getItem(activeFolderKey) || null;
+        let noteCodeObjs = JSON.parse(localStorage.getItem(noteCodesKey) || '[]')
+            .map(o => (typeof o === 'string') ? {code: o} : ({code: o.code}));
 
         let clientId = localStorage.getItem(clientIdKey);
 
@@ -1804,6 +1878,17 @@
         const createDateElem = $('#createDate');
         const updateDateElem = $('#updateDate');
         const addBtn = $('#addBtn');
+        const addFolderBtn = $('#addFolderBtn');
+        if (addFolderBtn) {
+            addFolderBtn.addEventListener('click', () => {
+                const name = prompt('폴더 이름을 입력하세요');
+                if (!name) return;
+                const f = {id: crypto.randomUUID(), name: name.trim(), codes: []};
+                folders.push(f);
+                saveFolders();
+                renderFolders();
+            });
+        }
         const codeInput = $('#codeInput');
         // Restrict to uppercase letters & digits, max 8 chars
         codeInput.addEventListener('input', () => {
@@ -1990,6 +2075,147 @@
             noMemoElem.classList.remove('hidden');
         }
 
+        function saveFolders() {
+            localStorage.setItem(foldersKey, JSON.stringify(folders));
+        }
+
+        /* ---------- 폴더 삭제 ---------- */
+        function deleteFolder(id) {
+            const idx = folders.findIndex(f => f.id === id);
+            if (idx === -1) return;
+
+            if (!confirm('폴더를 삭제할까요?')) return;
+
+            // 1) 메모들을 루트로 이동
+            noteCodeObjs.forEach(o => {
+                if (o.folderId === id) o.folderId = null;
+            });
+            localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+
+            // 2) 폴더 배열에서 제거하고 저장
+            folders.splice(idx, 1);
+            saveFolders();
+
+            // 3) 루트(전체)로 전환
+            activeFolderId = null;
+            localStorage.removeItem(activeFolderKey);
+
+            // 4) 화면 갱신
+            renderFolders();
+            renderList();
+        }
+
+        /* ---------- 메모를 선택 폴더에 배치 ---------- */
+        function moveNoteToFolder(noteCode, folderId) {
+            // 모든 폴더에서 코드 제거
+            folders.forEach(f => {
+                f.codes = (f.codes || []).filter(c => c !== noteCode);
+            });
+
+            // 선택 폴더에 추가
+            if (folderId) {
+                const target = folders.find(f => f.id === folderId);
+                if (target) {
+                    if (!target.codes) target.codes = [];
+                    if (!target.codes.includes(noteCode)) {
+                        target.codes.push(noteCode);
+                    }
+                }
+            }
+
+            saveFolders();
+            renderFolders();
+            renderList();
+        }
+
+        /* ---------- 폴더 선택 모달 ---------- */
+        function showMoveToFolderModal(noteCode) {
+            const modal   = document.getElementById('moveFolderModal');
+            const select  = document.getElementById('moveFolderSelect');
+
+            // 드롭다운 갱신
+            select.innerHTML = '';
+            folders.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.id;
+                opt.textContent = f.name;
+                select.appendChild(opt);
+            });
+            const addOpt = document.createElement('option');
+            addOpt.value = 'add';
+            addOpt.textContent = '➕  폴더 추가하기';
+            select.appendChild(addOpt);
+
+            modal.classList.add('show');
+
+            document.getElementById('moveFolderCancel').onclick = () => modal.classList.remove('show');
+            document.getElementById('moveFolderConfirm').onclick = () => {
+                const val = select.value;
+                if (val === 'add') {
+                    const name = prompt('새 폴더 이름을 입력하세요');
+                    if (!name) return;
+                    const newFolder = {id: crypto.randomUUID(), name: name.trim(), codes: []};
+                    folders.push(newFolder);
+                    saveFolders();
+                    moveNoteToFolder(noteCode, newFolder.id);
+                } else {
+                    moveNoteToFolder(noteCode, val);
+                }
+                modal.classList.remove('show');
+            };
+
+            // 모달 배경 클릭 시 닫기
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('show');
+            });
+        }
+
+        function renderFolders() {
+            const list = document.getElementById('folderList');
+            if (!list) return;
+            list.innerHTML = '';
+
+            // 전체(root)
+            const root = document.createElement('div');
+            root.className = 'folder-item' + (activeFolderId === null ? ' active' : '');
+            root.textContent = '전체';
+            root.onclick = () => {
+                activeFolderId = null;
+                localStorage.removeItem(activeFolderKey);
+                renderFolders();
+                renderList();
+            };
+            list.appendChild(root);
+
+            folders.forEach(f => {
+                const item = document.createElement('div');
+                item.className = 'folder-item' + (f.id === activeFolderId ? ' active' : '');
+                item.innerHTML = `
+            <span>📁 ${f.name}</span>
+            <span style="display:flex;gap:4px;">
+                <span>${(f.codes || []).length}</span>
+                <span class="folder-delete" title="삭제" data-id="${f.id}">🗑️</span>
+            </span>`;
+
+                // 클릭 → 폴더 선택
+                item.addEventListener('click', () => {
+                    activeFolderId = f.id;
+                    localStorage.setItem(activeFolderKey, activeFolderId);
+                    renderFolders();
+                    renderList();
+                });
+
+                // 휴지통 클릭 → 삭제
+                item.querySelector('.folder-delete')
+                    .addEventListener('click', (e) => {
+                        e.stopPropagation();          // 폴더 선택 이벤트 막기
+                        deleteFolder(f.id);
+                    });
+
+                list.appendChild(item);
+            });
+        }
+
         function setupAutoSave() {
             if (autoSaveTimerId !== null) {
                 clearInterval(autoSaveTimerId);
@@ -2025,6 +2251,7 @@
                     }
                     const fetched = data;
                     memos = codes.map(c => fetched.find(m => m.code === c)).filter(m => m);
+                    renderFolders();
                     renderList();
                     if (memos.length === 0) {
                         memoDetail.classList.add('hidden');
@@ -2042,7 +2269,10 @@
 
         function renderList() {
             sidebarList.innerHTML = '';
-            memos.forEach(m => {
+            const currentFolderCodes = activeFolderId === null
+                ? noteCodeObjs.map(o => o.code)                                    // 전체 폴더
+                : (folders.find(f => f.id === activeFolderId)?.codes || []);      // 선택 폴더
+            memos.filter(m => currentFolderCodes.includes(m.code)).forEach(m => {
                 const li = document.createElement('div');
                 li.className = 'memo-item';
                 li.setAttribute('draggable', true);
@@ -2061,6 +2291,7 @@
                     <button class="note-options-btn" title="메모 옵션">⋮</button>
                     <div class="note-options-menu hidden" data-code="${m.code}">
                         <div class="note-option-item invite-option">🔗 초대</div>
+                        <div class="note-option-item move-option">📂 폴더에 넣기</div>
                         <div class="note-option-item delete-option">🗑️ 삭제</div>
                     </div>
                 `;
@@ -2101,6 +2332,14 @@
                     e.stopPropagation();
                     optionsMenu.classList.add('hidden');
                     showInviteModal(m.code);
+                });
+
+                // 폴더에 넣기 클릭 이벤트
+                const moveOption = li.querySelector('.move-option');
+                moveOption.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    optionsMenu.classList.add('hidden');
+                    showMoveToFolderModal(m.code);
                 });
 
                 // 삭제 옵션 클릭 이벤트
@@ -2254,21 +2493,28 @@
             })
                 .then(res => res.json())
                 .then(() => {
-                            const copyBtn = $('#copyCodeBtn');
-                            const originalText = copyBtn.innerHTML;
-                            copyBtn.innerHTML = '<span>✓</span>';
-                            copyBtn.style.color = 'var(--success)';
+                    const copyBtn = $('#copyCodeBtn');
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<span>✓</span>';
+                    copyBtn.style.color = 'var(--success)';
 
-                            setTimeout(() => {
-                                copyBtn.innerHTML = originalText;
-                                copyBtn.style.color = '';
-                            }, 2000);
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                        copyBtn.style.color = '';
+                    }, 2000);
 
                     noteCodeObjs.unshift({code}); // 새 메모를 목록 맨 앞에 배치
                     localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
                     codes = noteCodeObjs.map(o => o.code);
                     activeCode = code;
                     localStorage.setItem(activeCodeKey, activeCode);
+                    if (activeFolderId) {
+                        const folderObj = folders.find(f => f.id === activeFolderId);
+                        if (folderObj && !folderObj.codes.includes(code)) {
+                            folderObj.codes.push(code);
+                            saveFolders();
+                        }
+                    }
                     codeInput.value = '';
                     fetchMemos();
                     showNotification('메모가 추가되었습니다', 'success');
@@ -2421,13 +2667,13 @@
 
                 fetch('/share/link', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ link, remainingCnt })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({link, remainingCnt})
                 })
-                .then(res => res.json())
-                .then(data => displayShareResult(data))
-                .catch(() => showNotification('공유 생성에 실패했습니다', 'error'));
-            } 
+                    .then(res => res.json())
+                    .then(data => displayShareResult(data))
+                    .catch(() => showNotification('공유 생성에 실패했습니다', 'error'));
+            }
             // 파일 모드인 경우
             else {
                 const fileInput = $('#fileInput');
@@ -2444,9 +2690,9 @@
                     method: 'POST',
                     body: formData
                 })
-                .then(res => res.json())
-                .then(data => displayShareResult(data))
-                .catch(() => showNotification('공유 생성에 실패했습니다', 'error'));
+                    .then(res => res.json())
+                    .then(data => displayShareResult(data))
+                    .catch(() => showNotification('공유 생성에 실패했습니다', 'error'));
             }
         });
 
@@ -2468,6 +2714,8 @@
         }
 
         fetchMemos();
+        renderFolders();
+        renderList();
     });
 </script>
 </body>
