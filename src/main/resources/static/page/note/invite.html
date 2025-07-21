@@ -6,31 +6,84 @@
 </head>
 <body>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        const noteCodesKey = 'noteCodes';
-        if (!code) {
-            // No code: redirect immediately
-            window.location.href = '/';
-            return;
+document.addEventListener('DOMContentLoaded', async () => {
+    const params = new URLSearchParams(window.location.search);
+
+    // 여러 개의 ?code= 파라미터와 쉼표 구분식 모두 지원
+    const codes = params.getAll('code')
+        .flatMap(c => c.split(',').map(s => s.trim()).filter(Boolean));
+
+    // 폴더 관련 파라미터
+    const folderName = params.get('folder');
+    const folderDescriptionParam = params.get('folderDescription');
+
+    const noteCodesKey = 'noteCodes';
+    const foldersKey = 'folders';
+
+    if (codes.length === 0) {
+        // code 파라미터가 없으면 홈으로
+        window.location.href = '/';
+        return;
+    }
+
+    /* ---------- 공통 헤더 ---------- */
+    const headers = {};
+    const storedConnect = localStorage.getItem('connectClientCode');
+    if (storedConnect) headers['Connect-Code'] = storedConnect;
+
+    /* ---------- 기존 저장 데이터 로드 ---------- */
+    const noteCodeObjs = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
+    const folders = JSON.parse(localStorage.getItem(foldersKey) || '[]');
+
+    /* ---------- 폴더 객체 준비 ---------- */
+    let folderObj = null;
+    if (folderName) {
+        folderObj = folders.find(f => f.name === folderName);
+        if (!folderObj) {
+            folderObj = {
+                id: 'f' + Date.now().toString(36),
+                name: folderName,
+                description: folderDescriptionParam || null,
+                codes: []
+            };
+            folders.unshift(folderObj);
+        } else if (folderDescriptionParam) {
+            folderObj.description = folderDescriptionParam;
         }
-        // Code exists: create memo via API
-        const headers = {};
-        const storedConnect = localStorage.getItem('connectClientCode');
-        if (storedConnect) headers['Connect-Code'] = storedConnect;
-        fetch(`/note/${encodeURIComponent(code)}`, {method: 'POST', headers})
-            .then(res => res.json())
-            .then(note => {
-                // Update localStorage with new code at top
-                let noteCodeObjs = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
-                noteCodeObjs = noteCodeObjs.filter(o => o.code !== note.code);
-                noteCodeObjs.unshift({code: note.code});
-                localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
-                // Redirect to main page
-                window.location.href = '/';
-            });
-    });
+    }
+
+    /* ---------- 각 코드별 메모 생성 ---------- */
+    for (const code of codes) {
+        try {
+            const res = await fetch(`/note/${encodeURIComponent(code)}`, { method: 'POST', headers });
+            if (!res.ok) continue;
+            const note = await res.json();
+
+            // noteCodes 최신화 (중복 제거 + 맨 앞에)
+            const idx = noteCodeObjs.findIndex(o => o.code === note.code);
+            if (idx !== -1) noteCodeObjs.splice(idx, 1);
+            noteCodeObjs.unshift({ code: note.code });
+
+            // 폴더에 코드 삽입
+            if (folderObj) {
+                const cIdx = folderObj.codes.indexOf(note.code);
+                if (cIdx !== -1) folderObj.codes.splice(cIdx, 1);
+                folderObj.codes.unshift(note.code);
+            }
+        } catch (_) {
+            /* 실패한 코드는 무시 */
+        }
+    }
+
+    /* ---------- 저장 ---------- */
+    localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+    if (folderObj) {
+        localStorage.setItem(foldersKey, JSON.stringify(folders));
+    }
+
+    /* ---------- 완료 후 메인 페이지로 ---------- */
+    window.location.href = '/';
+});
 </script>
 </body>
 </html>
