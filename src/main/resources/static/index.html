@@ -71,6 +71,8 @@
             --transition-fast: 0.15s ease;
             --transition-normal: 0.2s ease;
             --transition-slow: 0.3s ease;
+
+            --folder-bg: #e8e8e8;
         }
 
         /* Dark Theme */
@@ -104,6 +106,8 @@
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
             --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+
+            --folder-bg: #353535;
         }
 
         /* ---------- Base Reset ---------- */
@@ -402,10 +406,34 @@
             border-radius: var(--radius-md);
             user-select: none;
             transition: background var(--transition-fast);
+            background: var(--folder-bg);
         }
 
         .folder-header:hover {
-            background: var(--surface-secondary);
+            background: var(--folder-bg);
+        }
+
+        .folder-header.active {
+            background: var(--folder-bg);
+            color: var(--text-primary);
+        }
+        .folder-header.active .folder-description {
+            color: rgba(255,255,255,.9);
+        }
+
+        .folder-header::before {
+            content: '▸';
+            position: absolute;
+            left: var(--spacing-sm);
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: var(--font-sm);
+            color: var(--text-tertiary); /* 기본 색상 */
+            transition: color var(--transition-fast);
+        }
+
+        .folder-header.has-active-memo::before {
+            color: var(--accent-primary); /* 메모 선택된 테두리 색상과 동일하게 */
         }
 
         .folder-list {
@@ -504,14 +532,10 @@
         }
 
         .memo-item.active {
-            background: var(--accent-primary);
-            color: white;
-            border-color: var(--accent-primary);
+            background: transparent;
+            color: var(--text-primary);
+            border: 2px solid var(--accent-primary);
             box-shadow: var(--shadow-md);
-        }
-
-        .memo-item.active {
-            color: rgba(255, 255, 255, 0.8);
         }
 
         .memo-title {
@@ -556,7 +580,7 @@
         }
 
         .memo-item.active .memo-meta {
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--text-secondary);
         }
 
         .sidebar-footer {
@@ -1156,7 +1180,19 @@
         }
 
         .memo-item.in-folder {
-            padding-left: calc(var(--spacing-md) + 20px); /* 들여쓰기 */
+            padding-left: calc(var(--spacing-md) + 24px);
+        }
+
+        .memo-item.in-folder::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            bottom: 4px;
+            width: 10px;
+            border-radius: var(--radius-sm);
+            background: var(--folder-bg);
+            opacity: .9;
         }
 
         .folder-delete-btn {
@@ -2718,7 +2754,7 @@
                         : '';
                     header.innerHTML = `
                     <div class="folder-header-row">
-                        <span class="folder-label">${collapsed ? '▶' : '▼'} 📁 ${f.name}</span>
+                        <span class="folder-label"><span class="folder-arrow">${collapsed ? '▶' : '▼'}</span> 📁 ${f.name}</span>
                         <button class="folder-options-btn" title="폴더 옵션">⋮</button>
                     </div>
                     ${descriptionHTML}
@@ -2727,6 +2763,13 @@
                         <div class="folder-option-item edit-desc-option">✏️ 설명 수정</div>
                         <div class="folder-option-item delete-option">🗑️ 삭제</div>
                     </div>`;
+                    // 선택된 메모가 폴더 안에 있을 경우 폴더 화살표 색상 변경
+                    const arrowElem = header.querySelector('.folder-arrow');
+                    if (f.codes.includes(activeCode)) {
+                        arrowElem.style.color = 'var(--accent-primary)';
+                    } else {
+                        arrowElem.style.color = '';
+                    }
                     sidebarList.appendChild(header);
 
                     /* ── 드래그 핸들러 (폴더) ───────────── */
