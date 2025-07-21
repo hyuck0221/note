@@ -1205,6 +1205,8 @@
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.css"/>
     <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+    <!-- Toast UI linkify plugin (auto‑detect URLs) -->
+    <script src="https://uicdn.toast.com/editor-plugin-linkify/latest/toastui-editor-plugin-linkify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -1503,6 +1505,33 @@
     </div>
 </div>
 
+<!-- Folder Invite Modal -->
+<div id="folderInviteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">폴더 초대</h3>
+            <button id="folderInviteClose" class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">링크</label>
+                <div style="display:flex;gap:var(--spacing-sm);">
+                    <input id="folderInviteLink" class="form-input" type="text" readonly/>
+                    <button id="copyFolderInviteLinkBtn" class="btn btn-secondary">복사</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">만료 일자</label>
+                <input id="folderInviteExpire" class="form-input" type="text" readonly/>
+            </div>
+            <div class="form-group">
+                <label class="form-label">QR 코드</label>
+                <div id="folderInviteQr" style="text-align:center;margin-top:var(--spacing-md);"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Move Folder Modal -->
 <div id="moveFolderModal" class="modal">
     <div class="modal-content">
@@ -1647,6 +1676,64 @@
             });
         }
 
+            /* ---------- Folder Invite ---------- */
+    function showFolderInviteModal(sharedLink, expireDate) {
+        const modal = document.getElementById('folderInviteModal');
+        const linkInput = document.getElementById('folderInviteLink');
+        const expireInput = document.getElementById('folderInviteExpire');
+        const qrWrap = document.getElementById('folderInviteQr');
+
+        linkInput.value = sharedLink;
+        expireInput.value = expireDate.replace('T', ' ').substring(0, 16);
+
+        qrWrap.innerHTML = '';
+        new QRCode(qrWrap, {
+            text: sharedLink,
+            width: 128,
+            height: 128,
+            colorDark: document.body.classList.contains('dark-mode') ? '#FFFFFF' : '#000000',
+            colorLight: document.body.classList.contains('dark-mode') ? '#1A1A1A' : '#FFFFFF',
+        });
+
+        document.getElementById('copyFolderInviteLinkBtn').onclick = () => {
+            linkInput.select();
+            document.execCommand('copy');
+            showNotification('링크가 복사되었습니다', 'success');
+        };
+
+        const closeBtn = document.getElementById('folderInviteClose');
+        const hide = () => modal.classList.remove('show');
+        closeBtn.onclick = hide;
+        modal.onclick = e => { if (e.target === modal) hide(); };
+
+        modal.classList.add('show');
+    }
+
+    async function inviteFolder(folderObj) {
+        if (!folderObj || !folderObj.codes || folderObj.codes.length === 0) {
+            showNotification('폴더에 메모가 없습니다', 'error');
+            return;
+        }
+
+        const baseUrl   = window.location.origin;
+        const codesStr  = folderObj.codes.join(',');
+        let inviteLink  = `${baseUrl}/page/note/invite?code=${codesStr}&folder=${encodeURIComponent(folderObj.name)}`;
+        if (folderObj.description) {
+            inviteLink += `&folderDescription=${encodeURIComponent(folderObj.description)}`;
+        }
+
+        const res = await fetch(`${baseUrl}/share/link`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ link: inviteLink, remainingCnt: 1000 })
+        });
+        if (!res.ok) { showNotification('공유 링크 생성 실패', 'error'); return; }
+
+        const data       = await res.json();  // ShareBody
+        const sharedLink = `${baseUrl}/page/share/${data.code}`;
+        showFolderInviteModal(sharedLink, data.expireDate);
+    }
+
         // 메모 삭제 함수
         function deleteNote(noteCode) {
             // 로컬스토리지에서 메모 코드 제거
@@ -1732,12 +1819,24 @@
         function initEditor(content = '') {
             // Use theme based on current mode
             const isDarkMode = document.body.classList.contains('dark-mode');
-            return new toastui.Editor({
+            const editor = new toastui.Editor({
                 el: $('#memoEditor'),
                 height: '100%',
                 width: '100%',
                 initialEditType: 'wysiwyg',
                 previewStyle: 'vertical',
+                /* auto‑link URLs + open in new tab */
+                htmlRender: {
+                    linkAttributes: {
+                        target: '_blank',
+                        rel: 'noopener noreferrer'
+                    }
+                },
+                // let markdown parser turn bare URLs into links
+                markdown: { linkify: true },
+                plugins: (toastui.Editor.plugin && toastui.Editor.plugin.linkify)
+                    ? [toastui.Editor.plugin.linkify]
+                    : [],
                 toolbarItems: [
                     ['heading', 'bold', 'italic', 'strike'],
                     ['hr', 'quote'],
@@ -1749,6 +1848,21 @@
                 // Use dark theme when in dark mode
                 theme: isDarkMode ? 'dark' : 'light'
             });
+            /* make editor links open immediately */
+            setTimeout(() => {
+                // click‑to‑open for hyperlinks in both WYSIWYG & preview
+                if (!memoEditorContainer._toastui_link_listener) {
+                    memoEditorContainer.addEventListener('click', e => {
+                        const anchor = e.target.closest('a');
+                        if (anchor && anchor.href) {
+                            e.preventDefault();
+                            window.open(anchor.href, '_blank', 'noopener,noreferrer');
+                        }
+                    });
+                    memoEditorContainer._toastui_link_listener = true;
+                }
+            }, 0);
+            return editor;
         }
 
         const connectCodeKey = 'connectClientCode';
@@ -1814,6 +1928,35 @@
 
         updateThemeIcon();
         let memoEditor = initEditor('');
+        /* ---------- 자동 하이퍼링크 ---------- */
+        // 1) 붙여넣은 텍스트가 URL 하나라면 즉시 링크로 삽입
+        memoEditorContainer.addEventListener('paste', (ev) => {
+            const text = (ev.clipboardData || window.clipboardData).getData('text').trim();
+            const urlPattern = /^https?:\/\/[^\s]+$/i;
+            if (urlPattern.test(text) && memoEditor) {
+                ev.preventDefault();
+                memoEditor.exec('link', { url: text, linkText: text });
+            }
+        });
+
+        // 2) 입력 도중 URL 끝에 스페이스 / 엔터 입력 시 자동 링크화
+        memoEditor.on('keydown', (ev) => {
+            if (ev.key !== ' ' && ev.key !== 'Enter') return;
+            // 0 ms 타임아웃으로 입력 확정 후 실행
+            setTimeout(() => {
+                const sel = window.getSelection();
+                if (!sel || !sel.anchorNode) return;
+                const textNode = sel.anchorNode.nodeType === 3 ? sel.anchorNode : sel.anchorNode.lastChild;
+                if (!textNode || textNode.nodeType !== 3) return;
+
+                const words = textNode.textContent.split(/\s/);
+                const last = words[words.length - 2] || '';           // 직전 단어
+                const urlPattern = /^https?:\/\/[^\s]+$/i;
+                if (urlPattern.test(last)) {
+                    memoEditor.exec('link', { url: last, linkText: last });
+                }
+            }, 0);
+        });
         let originalTitle = '';
         let originalContent = '';
         moveToolbar();
@@ -2641,7 +2784,7 @@
                         .addEventListener('click', ev => {
                             ev.stopPropagation();
                             fOptionsMenu.classList.add('hidden');
-                            showNotification('폴더 초대 기능은 곧 추가됩니다', 'info');
+                            inviteFolder(f);                 // 실제 초대 로직 실행
                         });
 
                     fOptionsMenu.querySelector('.edit-desc-option')
