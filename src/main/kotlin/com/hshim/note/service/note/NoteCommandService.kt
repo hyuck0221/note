@@ -44,4 +44,11 @@ class NoteCommandService(
             ?.let { NoteResponse(it) }
             ?: throw Exception("note not found.")
     }
+
+    fun updateDescription(code: String, description: String?): NoteResponse {
+        return noteRepository.findByIdOrNull(code)
+            ?.apply { this.description = description ?: "" }
+            ?.let { NoteResponse(it) }
+            ?: throw Exception("note not found.")
+    }
 }

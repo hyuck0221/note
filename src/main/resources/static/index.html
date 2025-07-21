@@ -393,9 +393,10 @@
         /* ---------- Folder List ---------- */
         .folder-header {
             cursor: pointer;
+            position: relative; /* 옵션 메뉴 기준점 */
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column; /* 제목줄 + 설명을 세로로 */
+            gap: 4px;
             padding: var(--spacing-md);
             margin: var(--spacing-xs) 0;
             border-radius: var(--radius-md);
@@ -445,6 +446,47 @@
             opacity: 1;
         }
 
+        .folder-header-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .folder-description {
+            padding-left: 24px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .folder-options-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .folder-options-menu {
+            position: absolute;
+            top: calc(var(--spacing-sm) + 28px); /* note 메뉴와 동일 Y 오프셋 */
+            right: var(--spacing-sm); /* note 메뉴와 동일 X 오프셋 */
+            background: var(--surface-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            min-width: 120px;
+            z-index: 1000;
+            box-shadow: 0 2px 6px rgb(0 0 0 / 12%);
+        }
+
+        .folder-option-item {
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        .folder-option-item:hover {
+            background: var(--surface-secondary);
+        }
+
         .memo-item {
             padding: var(--spacing-md);
             margin-bottom: var(--spacing-xs);
@@ -468,7 +510,7 @@
             box-shadow: var(--shadow-md);
         }
 
-        .memo-item.active .memo-preview {
+        .memo-item.active {
             color: rgba(255, 255, 255, 0.8);
         }
 
@@ -481,6 +523,17 @@
             -webkit-line-clamp: 1;
             -webkit-box-orient: vertical;
             overflow: hidden;
+        }
+
+        .memo-description{
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+            line-height: var(--line-height-normal);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-top: 2px;
         }
 
         .memo-preview {
@@ -810,7 +863,7 @@
         /* ---------- Notifications ---------- */
         .notification {
             position: fixed;
-            top: var(--spacing-xl);
+            top: calc(64px + var(--spacing-md)); /* below fixed topbar */
             right: var(--spacing-xl);
             background: var(--surface-primary);
             color: var(--text-primary);
@@ -960,6 +1013,10 @@
             .modal-content {
                 width: 95%;
                 margin: var(--spacing-lg);
+            }
+
+            .notification {
+                top: calc(56px + var(--spacing-md)); /* mobile topbar height + margin */
             }
         }
 
@@ -1458,10 +1515,14 @@
     document.addEventListener('DOMContentLoaded', () => {
         // 문서 클릭 시 열린 옵션 메뉴 닫기
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.note-options-btn') && !e.target.closest('.note-options-menu')) {
-                document.querySelectorAll('.note-options-menu').forEach(menu => {
-                    menu.classList.add('hidden');
-                });
+            if (!e.target.closest('.note-options-btn') &&
+                !e.target.closest('.note-options-menu') &&
+                !e.target.closest('.folder-options-btn') &&
+                !e.target.closest('.folder-options-menu')) {
+                document.querySelectorAll('.note-options-menu')
+                    .forEach(menu => menu.classList.add('hidden'));
+                document.querySelectorAll('.folder-options-menu')
+                    .forEach(menu => menu.classList.add('hidden'));
             }
         });
 
@@ -1841,6 +1902,7 @@
 
         let draggedCode = null;
         let draggedFolderId = null;
+        let draggedSidebarKey = null;     // 루트 메모·폴더 혼합 정렬용
         const clientIdKey = 'clientId';
         const noteCodesKey = 'noteCodes';
         const noteCodeObjsKey = noteCodesKey;
@@ -1957,7 +2019,7 @@
             addFolderBtn.addEventListener('click', () => {
                 const name = prompt('폴더 이름을 입력하세요');
                 if (!name) return;
-                const f = {id: crypto.randomUUID(), name: name.trim(), codes: []};
+                const f = {id: crypto.randomUUID(), name: name.trim(), description: '', codes: []};
                 folders.push(f);
                 saveFolders();
                 renderList();
@@ -2220,7 +2282,7 @@
                 if (val === 'add') {
                     const name = prompt('새 폴더 이름을 입력하세요');
                     if (!name) return;
-                    const newFolder = {id: crypto.randomUUID(), name: name.trim(), codes: []};
+                    const newFolder = {id: crypto.randomUUID(), name: name.trim(), description: '', codes: []};
                     folders.push(newFolder);
                     saveFolders();
                     moveNoteToFolder(noteCode, newFolder.id);
@@ -2291,18 +2353,17 @@
             sidebarList.innerHTML = '';
 
             /* util: 메모 하나 생성 */
-            function buildMemo(m) {
+            function buildMemo(m, isRoot = false) {
                 const el = document.createElement('div');
                 el.className = 'memo-item';
                 el.setAttribute('draggable', 'true');
 
-                const preview = (m.content || '').substring(0, 100);
                 const cDateStr = new Date(m.createDate).toLocaleDateString();
                 const uDateStr = new Date(m.updateDate).toLocaleDateString();
 
                 el.innerHTML = `
             <div class="memo-title">${m.title || '(제목없음)'}</div>
-            <div class="memo-preview">${preview}</div>
+            ${m.description ? `<div class="memo-description">${m.description}</div>` : ''}
             <div class="memo-meta">
                 <span>수정: ${uDateStr}</span>
                 <span>생성: ${cDateStr}</span>
@@ -2310,6 +2371,7 @@
             <button class="note-options-btn" title="메모 옵션">⋮</button>
             <div class="note-options-menu hidden" data-code="${m.code}">
                 <div class="note-option-item invite-option">🔗 초대</div>
+                <div class="note-option-item edit-desc-option">✏️ 설명 수정</div>
                 <div class="note-option-item move-option">📂 폴더로 이동</div>
                 <div class="note-option-item delete-option">🗑️ 삭제</div>
             </div>
@@ -2341,6 +2403,27 @@
                         optionsMenu.classList.add('hidden');
                         showInviteModal(m.code);
                     });
+                    optionsMenu.querySelector('.edit-desc-option')
+                        .addEventListener('click', ev => {
+                            ev.stopPropagation();
+                            optionsMenu.classList.add('hidden');
+
+                            const newDesc = prompt('메모 설명을 입력하세요', m.description || '');
+                            if (newDesc === null) return;
+
+                            fetch(`/note/${m.code}/description`, {
+                                method: 'PUT',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({description: newDesc.trim()}),
+                            })
+                                .then(r => r.ok ? r.json() : Promise.reject())
+                                .then(res => {
+                                    m.description = (res && res.description) ?? newDesc.trim();
+                                    renderList();
+                                    showNotification('설명이 업데이트되었습니다', 'success');
+                                })
+                                .catch(() => showNotification('설명 수정 실패', 'error'));
+                        });
                     optionsMenu.querySelector('.move-option').addEventListener('click', e => {
                         e.stopPropagation();
                         optionsMenu.classList.add('hidden');
@@ -2353,34 +2436,70 @@
                     });
                 }
 
-                // 드래그 이벤트
-                el.addEventListener('dragstart', e => {
-                    draggedCode = m.code;
-                    /* 일부 브라우저(Firefox 등)는 setData 가 호출되지 않으면 drag 가 시작되지 않습니다 */
-                    e.dataTransfer.setData('text/plain', m.code);
-                    e.dataTransfer.effectAllowed = 'move';
-                });
-                el.addEventListener('dragend', () => {
-                    draggedCode = null;
-                    el.style.background = '';
-                });
+                // ── 드래그 이벤트 ─────────────────────────────
+                if (el.classList.contains('in-folder')) {
+                    // 폴더 내부 메모 정렬
+                    el.addEventListener('dragstart', e => {
+                        draggedCode = m.code;          // 폴더 내부 정렬용
+                        draggedSidebarKey = null;      // 루트 재배치는 끄기
+                        e.dataTransfer.setData('text/plain', m.code);
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                    el.addEventListener('dragend', () => {
+                        draggedCode = null;
+                        el.style.background = '';
+                    });
+                    el.addEventListener('dragover', e => {
+                        e.preventDefault();
+                        el.style.background = 'var(--surface-secondary)';
+                    });
+                    el.addEventListener('dragleave', () => el.style.background = '');
+                    el.addEventListener('drop', e => {
+                        e.preventDefault();
+                        el.style.background = '';
+                        if (draggedCode && draggedCode !== m.code) {
+                            reorderMemos(draggedCode, m.code);
+                        }
+                        draggedCode = null;
+                    });
+                } else {
+                    // 루트 메모 ↔ 폴더 혼합 정렬
+                    el.addEventListener('dragstart', e => {
+                        draggedCode = m.code;          // 폴더 이동을 위해 유지
+                        draggedSidebarKey = m.code;    // 사이드바 정렬 키
+                        e.dataTransfer.setData('text/plain', m.code);
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                    el.addEventListener('dragend', () => {
+                        draggedCode = null;
+                        draggedSidebarKey = null;
+                        el.style.background = '';
+                    });
+                    el.addEventListener('dragover', e => {
+                        e.preventDefault();
+                        if (draggedSidebarKey && draggedSidebarKey !== m.code)
+                            el.style.background = 'var(--surface-secondary)';
+                    });
+                    el.addEventListener('dragleave', () => el.style.background = '');
+                    el.addEventListener('drop', e => {
+                        e.preventDefault();
+                        el.style.background = '';
 
-                // 드롭으로 정렬 (같은 영역)
-                el.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    el.style.background = 'var(--surface-secondary)';
-                });
-                el.addEventListener('dragleave', () => {
-                    el.style.background = '';
-                });
-                el.addEventListener('drop', e => {
-                    e.preventDefault();
-                    el.style.background = '';
-                    if (draggedCode && draggedCode !== m.code) {
-                        reorderMemos(draggedCode, m.code);
-                    }
-                    draggedCode = null;
-                });
+                        // 폴더 안에서 끌어온 메모라면 루트로 이동
+                        if (draggedCode) {
+                            moveNoteToFolder(draggedCode, null);
+                        }
+
+                        // 사이드바 정렬
+                        if (draggedSidebarKey && draggedSidebarKey !== m.code) {
+                            reorderSidebar(draggedSidebarKey, m.code);
+                        }
+
+                        // 정리
+                        draggedCode = null;
+                        draggedSidebarKey = null;
+                    });
+                }
 
                 // 현재 선택된 메모 강조
                 if (activeCode === m.code) {
@@ -2390,95 +2509,168 @@
                 return el;
             }
 
-            /* 루트 메모 먼저 */
-            const codesInFolders = folders.flatMap(f => f.codes || []);
-            const rootCodes = noteCodeObjs.map(o => o.code).filter(c => !codesInFolders.includes(c));
-            rootCodes.forEach(c => {
-                const m = memos.find(mm => mm.code === c);
-                if (m) sidebarList.appendChild(buildMemo(m));
-            });
+            // ----- Top‑level items (memos & folders mixed) -----
+            for (const key of sidebarOrder) {
+                if (key.startsWith('F:')) {
+                    const folderId = key.slice(2);
+                    const f = folders.find(ff => ff.id === folderId);
+                    if (!f) continue;
 
-            /* 폴더 헤더 + 내부 메모 */
-            folders.forEach(f => {
-                const collapsed = collapsedFolders.includes(f.id);
+                    const collapsed = collapsedFolders.includes(f.id);
 
-                const header = document.createElement('div');
-                header.className = 'folder-header';
-                header.setAttribute('draggable', 'true');
-                header.innerHTML = `
-                    <span class="folder-label">${collapsed ? '▶' : '▼'} 📁 ${f.name}</span>
-                    <span class="folder-count">${(f.codes || []).length}</span>
-                    <button class="folder-delete-btn" title="폴더 삭제">🗑️</button>
-                `;
-                sidebarList.appendChild(header);
+                    const header = document.createElement('div');
+                    header.className = 'folder-header';
+                    header.setAttribute('draggable', 'true');
+                    const descriptionHTML = f.description
+                        ? `<div class="folder-description">${f.description}</div>`
+                        : '';
+                    header.innerHTML = `
+                    <div class="folder-header-row">
+                        <span class="folder-label">${collapsed ? '▶' : '▼'} 📁 ${f.name}</span>
+                        <button class="folder-options-btn" title="폴더 옵션">⋮</button>
+                    </div>
+                    ${descriptionHTML}
+                    <div class="folder-options-menu hidden" data-folder-id="${f.id}">
+                        <div class="folder-option-item invite-option">🔗 초대</div>
+                        <div class="folder-option-item edit-desc-option">✏️ 설명 수정</div>
+                        <div class="folder-option-item delete-option">🗑️ 삭제</div>
+                    </div>`;
+                    sidebarList.appendChild(header);
 
-                // ── 폴더 드래그 정렬 ─────────────────────────────
-                header.addEventListener('dragstart', e => {
-                    draggedFolderId = f.id;
-                    e.dataTransfer.setData('text/plain', f.id);
-                    e.dataTransfer.effectAllowed = 'move';
-                });
-                header.addEventListener('dragend', () => {
-                    draggedFolderId = null;
-                    header.style.background = '';
-                });
-                header.addEventListener('dragenter', e => {
-                    e.preventDefault();
-                    if (draggedFolderId && draggedFolderId !== f.id)
-                        header.style.background = 'var(--surface-secondary)';
-                });
-                header.addEventListener('dragleave', () => header.style.background = '');
-                header.addEventListener('drop', e => {
-                    e.preventDefault();
-                    header.style.background = '';
-                    if (draggedFolderId && draggedFolderId !== f.id)
-                        reorderFolders(draggedFolderId, f.id);
-                    draggedFolderId = null;
-                });
-
-                // 삭제 버튼
-                header.querySelector('.folder-delete-btn')
-                    .addEventListener('click', e => {
-                        e.stopPropagation();       // 접힘/펼침 방지
-                        deleteFolder(f.id);
+                    /* ── 드래그 핸들러 (폴더) ───────────── */
+                    header.addEventListener('dragstart', e => {
+                        draggedFolderId = f.id;
+                        draggedSidebarKey = 'F:' + f.id;
+                        e.dataTransfer.setData('text/plain', f.id);
+                        e.dataTransfer.effectAllowed = 'move';
                     });
-
-                // 접기/펼치기
-                header.addEventListener('click', () => {
-                    const idx = collapsedFolders.indexOf(f.id);
-                    if (idx === -1) collapsedFolders.push(f.id);
-                    else collapsedFolders.splice(idx, 1);
-                    localStorage.setItem(collapsedFoldersKey, JSON.stringify(collapsedFolders));
-                    renderList();
-                });
-
-                // 메모 드롭 → 폴더 이동
-                header.addEventListener('dragover', e => e.preventDefault());
-                header.addEventListener('drop', e => {
-                    e.preventDefault();
-                    if (draggedCode) moveNoteToFolder(draggedCode, f.id);
-                    draggedCode = null;
-                });
-
-                // 펼쳐져 있을 때만 내부 메모 출력
-                if (!collapsed) {
-                    (f.codes || []).forEach(c => {
-                        const m = memos.find(mm => mm.code === c);
-                        if (m) {
-                            const el = buildMemo(m);
-                            el.classList.add('in-folder');   // ← 폴더 안 표시
-                            sidebarList.appendChild(el);
+                    header.addEventListener('dragend', () => {
+                        draggedFolderId = null;
+                        draggedSidebarKey = null;
+                        header.style.background = '';
+                    });
+                    header.addEventListener('dragenter', e => {
+                        e.preventDefault();
+                        if (draggedSidebarKey && draggedSidebarKey !== 'F:' + f.id)
+                            header.style.background = 'var(--surface-secondary)';
+                    });
+                    header.addEventListener('dragover', e => {
+                        e.preventDefault();
+                        if (draggedSidebarKey && draggedSidebarKey !== 'F:' + f.id)
+                            header.style.background = 'var(--surface-secondary)';
+                    });
+                    header.addEventListener('dragleave', () => header.style.background = '');
+                    header.addEventListener('drop', e => {
+                        e.preventDefault();
+                        header.style.background = '';
+                        if (draggedCode) {                           // 메모 → 폴더 이동
+                            moveNoteToFolder(draggedCode, f.id);
+                            draggedCode = null;
+                        } else if (draggedSidebarKey && draggedSidebarKey !== 'F:' + f.id) {
+                            reorderSidebar(draggedSidebarKey, 'F:' + f.id); // 사이드바 정렬
+                            draggedSidebarKey = null;
+                        }
+                        if (draggedFolderId && draggedFolderId !== f.id) {
+                            reorderFolders(draggedFolderId, f.id);          // 폴더 배열 동기화
+                            draggedFolderId = null;
                         }
                     });
-                }
-            });
 
-            /* 루트 드롭 영역 */
+                    // ── 폴더 옵션 버튼 및 메뉴 ───────────────────────────
+                    const fOptionsBtn = header.querySelector('.folder-options-btn');
+                    const fOptionsMenu = header.querySelector('.folder-options-menu');
+
+                    fOptionsBtn.addEventListener('click', ev => {
+                        ev.stopPropagation();
+                        document.querySelectorAll('.folder-options-menu').forEach(m => {
+                            if (m !== fOptionsMenu) m.classList.add('hidden');
+                        });
+                        fOptionsMenu.classList.toggle('hidden');
+                    });
+
+                    fOptionsMenu.querySelector('.invite-option')
+                        .addEventListener('click', ev => {
+                            ev.stopPropagation();
+                            fOptionsMenu.classList.add('hidden');
+                            showNotification('폴더 초대 기능은 곧 추가됩니다', 'info');
+                        });
+
+                    fOptionsMenu.querySelector('.edit-desc-option')
+                        .addEventListener('click', ev => {
+                            ev.stopPropagation();
+                            fOptionsMenu.classList.add('hidden');
+                            const newDesc = prompt('폴더 설명을 입력하세요', f.description || '');
+                            if (newDesc !== null) {
+                                f.description = newDesc.trim();
+                                saveFolders();
+                                renderList();
+                            }
+                        });
+
+                    fOptionsMenu.querySelector('.delete-option')
+                        .addEventListener('click', ev => {
+                            ev.stopPropagation();
+                            fOptionsMenu.classList.add('hidden');
+                            deleteFolder(f.id);
+                        });
+
+                    // 접기/펼치기
+                    const headerRow = header.querySelector('.folder-header-row');
+                    headerRow.addEventListener('click', ev => {
+                        // 옵션 메뉴 클릭은 무시
+                        if (ev.target.closest('.folder-options-btn') ||
+                            ev.target.closest('.folder-options-menu')) return;
+
+                        // 접힘 리스트 토글
+                        const idxColl = collapsedFolders.indexOf(f.id);
+                        if (idxColl === -1) {
+                            // 현재 펼쳐진 상태 → 접기
+                            collapsedFolders.push(f.id);
+                        } else {
+                            // 현재 접힌 상태 → 펼치기
+                            collapsedFolders.splice(idxColl, 1);
+                        }
+
+                        localStorage.setItem(collapsedFoldersKey, JSON.stringify(collapsedFolders));
+                        renderList();
+                    });
+
+                    // 메모 드롭 → 폴더 이동
+                    header.addEventListener('dragover', e => e.preventDefault());
+
+                    // 내부 메모 렌더
+                    if (!collapsed) {
+                        (f.codes || []).forEach(c => {
+                            const m = memos.find(mm => mm.code === c);
+                            if (m) {
+                                const el = buildMemo(m, false);
+                                el.classList.add('in-folder');
+                                sidebarList.appendChild(el);
+                            }
+                        });
+                    }
+                } else {
+                    const code = key;
+                    const m = memos.find(mm => mm.code === code);
+                    if (m) sidebarList.appendChild(buildMemo(m, true));
+                }
+            }
+            /* ------ 루트 빈 공간 드롭 처리 ------ */
             sidebarList.addEventListener('dragover', e => e.preventDefault());
             sidebarList.addEventListener('drop', e => {
+                // 빈 공간(= 리스트 자체) 위에 떨어뜨렸을 때
                 if (e.target === sidebarList && draggedCode) {
                     moveNoteToFolder(draggedCode, null);
+
+                    // 사이드바 순서에 없으면 맨 끝에 추가
+                    if (!sidebarOrder.includes(draggedCode)) {
+                        sidebarOrder.push(draggedCode);
+                        saveSidebarOrder();
+                    }
+
                     draggedCode = null;
+                    draggedSidebarKey = null;
+                    renderList();
                 }
             });
         }

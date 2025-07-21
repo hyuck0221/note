@@ -40,6 +40,14 @@ class NoteController(
         return noteCommandService.updateContent(code, request["content"])
     }
 
+    @PutMapping("/{code}/description")
+    fun updateDescription(
+        @PathVariable code: String,
+        @RequestBody request: Map<String, String?>,
+    ): NoteResponse {
+        return noteCommandService.updateDescription(code, request["description"])
+    }
+
     @GetMapping("/list")
     fun findAllBy(@RequestParam codes: List<String>): List<NoteResponse> {
         return noteQueryService.findAllBy(codes)
