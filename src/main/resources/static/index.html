@@ -525,7 +525,7 @@
             overflow: hidden;
         }
 
-        .memo-description{
+        .memo-description {
             font-size: var(--font-xs);
             color: var(--text-tertiary);
             line-height: var(--line-height-normal);
@@ -1171,12 +1171,42 @@
         .folder-delete-btn:hover {
             color: var(--error);
         }
+
+        /* Prevent Toast UI from relocating the popup with CSS transforms */
+        .toastui-editor-context-menu,
+        .toastui-editor-contextmenu {
+            transform: none !important;
+        }
+
+        /* ---------- Markdown list markers (announcements & terms) ---------- */
+        #termsContent ul,
+        #termsContent ol,
+        .modal-body ul,
+        .modal-body ol {
+            /* ensure bullets/numbers are visible */
+            list-style-position: inside;
+            margin: 0 0 var(--spacing-sm) var(--spacing-lg);
+            padding-left: 0;
+        }
+
+        /* unordered lists: • */
+        #termsContent ul,
+        .modal-body ul {
+            list-style-type: disc !important;
+        }
+
+        /* ordered lists: 1. */
+        #termsContent ol,
+        .modal-body ol {
+            list-style-type: decimal !important;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.css"/>
     <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 <script>
@@ -1513,6 +1543,11 @@
     var currentMenuCode = null;
 
     document.addEventListener('DOMContentLoaded', () => {
+
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({ gfm: true, breaks: true });
+        }
+
         // 문서 클릭 시 열린 옵션 메뉴 닫기
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.note-options-btn') &&
@@ -1779,6 +1814,8 @@
 
         updateThemeIcon();
         let memoEditor = initEditor('');
+        let originalTitle = '';
+        let originalContent = '';
         moveToolbar();
         updateStickyLeft();
         // Fix Toast UI table context-menu placement so it appears at the mouse pointer
@@ -1789,27 +1826,33 @@
                 const menu = document.querySelector('.toastui-editor-context-menu, .toastui-editor-contextmenu');
                 if (!menu) return;
 
-                // Force fixed positioning relative to the viewport to avoid transforms
-                menu.style.position = 'fixed';
+                function pin() {
+                    menu.style.position = 'fixed';
+                    menu.style.transform = 'none';
+                    menu.style.margin = '0';
 
-                const rect = menu.getBoundingClientRect();
-                let left = pointerX;
-                let top = pointerY;
+                    const rect = menu.getBoundingClientRect();
+                    let left = pointerX + 4;
+                    let top = pointerY + 4;
 
-                // Prevent overflow off the right / bottom edges
-                if (left + rect.width > window.innerWidth) {
-                    left = window.innerWidth - rect.width - 8;
+                    if (left + rect.width > window.innerWidth) left = window.innerWidth - rect.width - 8;
+                    if (top + rect.height > window.innerHeight) top = window.innerHeight - rect.height - 8;
+                    if (left < 8) left = 8;
+                    if (top < 8) top = 8;
+
+                    menu.style.left = `${left}px`;
+                    menu.style.top = `${top}px`;
                 }
-                if (top + rect.height > window.innerHeight) {
-                    top = window.innerHeight - rect.height - 8;
-                }
 
-                // Prevent overflow off the left / top edges
-                if (left < 8) left = 8;
-                if (top < 8) top = 8;
+                // initial pin
+                pin();
 
-                menu.style.left = `${left}px`;
-                menu.style.top = `${top}px`;
+                // keep pinning if Toast UI modifies the style later
+                const observer = new MutationObserver(pin);
+                observer.observe(menu, {attributes: true, attributeFilter: ['style']});
+
+                // stop observing when the menu closes
+                menu.addEventListener('mouseleave', () => observer.disconnect(), {once: true});
             }, 0);
         });
 
@@ -1844,27 +1887,33 @@
                     const menu = document.querySelector('.toastui-editor-context-menu, .toastui-editor-contextmenu');
                     if (!menu) return;
 
-                    // Force fixed positioning relative to the viewport to avoid transforms
-                    menu.style.position = 'fixed';
+                    function pin() {
+                        menu.style.position = 'fixed';
+                        menu.style.transform = 'none';
+                        menu.style.margin = '0';
 
-                    const rect = menu.getBoundingClientRect();
-                    let left = pointerX;
-                    let top = pointerY;
+                        const rect = menu.getBoundingClientRect();
+                        let left = pointerX + 4;
+                        let top = pointerY + 4;
 
-                    // Prevent overflow off the right / bottom edges
-                    if (left + rect.width > window.innerWidth) {
-                        left = window.innerWidth - rect.width - 8;
+                        if (left + rect.width > window.innerWidth) left = window.innerWidth - rect.width - 8;
+                        if (top + rect.height > window.innerHeight) top = window.innerHeight - rect.height - 8;
+                        if (left < 8) left = 8;
+                        if (top < 8) top = 8;
+
+                        menu.style.left = `${left}px`;
+                        menu.style.top = `${top}px`;
                     }
-                    if (top + rect.height > window.innerHeight) {
-                        top = window.innerHeight - rect.height - 8;
-                    }
 
-                    // Prevent overflow off the left / top edges
-                    if (left < 8) left = 8;
-                    if (top < 8) top = 8;
+                    // initial pin
+                    pin();
 
-                    menu.style.left = `${left}px`;
-                    menu.style.top = `${top}px`;
+                    // keep pinning if Toast UI modifies the style later
+                    const observer = new MutationObserver(pin);
+                    observer.observe(menu, {attributes: true, attributeFilter: ['style']});
+
+                    // stop observing when the menu closes
+                    menu.addEventListener('mouseleave', () => observer.disconnect(), {once: true});
                 }, 0);
             });
             applyEditorThemeClass();
@@ -2717,6 +2766,14 @@
         }
 
         function selectMemo(code) {
+
+            if (activeCode &&
+                (memoTitle.value !== originalTitle ||
+                    memoEditor.getMarkdown() !== originalContent)) {
+                updateTitle();      // 제목 저장
+                updateContent();    // 내용 저장
+            }
+
             activeCode = code;
             localStorage.setItem(activeCodeKey, activeCode);
             const memo = memos.find(m => m.code === code);
@@ -2727,6 +2784,9 @@
                 memoEditor.setMarkdown(memo.content || '');
                 createDateElem.textContent = new Date(memo.createDate).toLocaleString();
                 updateDateElem.textContent = new Date(memo.updateDate).toLocaleString();
+
+                originalTitle = memoTitle.value || '';
+                originalContent = memoEditor.getMarkdown() || '';
                 renderList();
             }
         }
@@ -2734,51 +2794,61 @@
         // 제목만 저장
         function updateTitle() {
             if (!activeCode) return;
+            const codeToSave = activeCode;
             const title = memoTitle.value.trim();
 
-            fetch(`/note/${activeCode}/title`, {
+            fetch(`/note/${codeToSave}/title`, {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({title})
             })
                 .then(res => res.json())
                 .then(data => {
-                    const memo = memos.find(m => m.code === activeCode);
+                    const memo = memos.find(m => m.code === codeToSave);
                     if (memo) {
                         memo.title = title;
                         const parsed = toDate(data.updateDate ?? Date.now());
                         memo.updateDate = parsed.getTime();
-                        updateDateElem.textContent = parsed.toLocaleString();
+                        if (activeCode === codeToSave) {
+                            updateDateElem.textContent = parsed.toLocaleString();
+                        }
                         renderList();
                     }
                     showNotification('제목이 저장되었습니다', 'success');
                 })
                 .catch((e) => showNotification('제목 저장에 실패했습니다', 'error'));
+
+            if (activeCode === codeToSave) originalTitle = memoTitle.value;
         }
 
         // 내용만 저장
         function updateContent() {
             if (!activeCode) return;
+            const codeToSave = activeCode;
             const content = memoEditor.getMarkdown();
 
-            fetch(`/note/${activeCode}/content`, {
+            fetch(`/note/${codeToSave}/content`, {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({content})
             })
                 .then(res => res.json())
                 .then(data => {
-                    const memo = memos.find(m => m.code === activeCode);
+                    const memo = memos.find(m => m.code === codeToSave);
                     if (memo) {
                         memo.content = content;
                         const parsed = toDate(data.updateDate ?? Date.now());
                         memo.updateDate = parsed.getTime();
-                        updateDateElem.textContent = parsed.toLocaleString();
+                        if (activeCode === codeToSave) {
+                            updateDateElem.textContent = parsed.toLocaleString();
+                        }
                         renderList();
                     }
                     showNotification('내용이 저장되었습니다', 'success');
                 })
                 .catch(() => showNotification('내용 저장에 실패했습니다', 'error'));
+
+            if (activeCode === codeToSave) originalContent = memoEditor.getMarkdown();
         }
 
         function generateCode() {
@@ -2841,6 +2911,9 @@
                 .catch(() => {
                     showNotification('메모 추가에 실패했습니다', 'error');
                 });
+
+            originalTitle = '';
+            originalContent = '';
         });
 
         // Share functionality
