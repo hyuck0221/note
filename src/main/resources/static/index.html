@@ -3409,7 +3409,7 @@
 
         // ===== WebSocket for Note Realtime =====
         // WebSocket Setup
-        const ws = new WebSocket(`ws://${window.location.origin}/socket/note/connect`);
+        const ws = new WebSocket(`${window.location.origin.replace('http', 'ws')}/socket/note/connect`);
 
         ws.addEventListener('open', () => {
             console.log('WebSocket 연결됨');
