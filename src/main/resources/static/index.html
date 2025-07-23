@@ -1275,6 +1275,19 @@
         .note-status-right {
             justify-content: flex-end;
         }
+        .refresh-btn {
+            padding: 4px 10px;
+            font-size: 12px;
+            line-height: 1.2;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            margin-left: 8px;
+            opacity: 0.95;
+            transition: opacity .15s ease;
+        }
+        .refresh-btn:hover { opacity: 1; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
@@ -1365,7 +1378,7 @@
                     <div id="noteStatusBanner" class="note-status-banner">
                       <div class="note-status-left">
                         <div id="editStatusNote" style="display:none; color: var(--warning);"></div>
-                        <button id="refreshMemoBtn" class="btn btn-secondary btn-sm" style="display:none;">새로고침</button>
+                          <button id="refreshMemoBtn" class="refresh-btn" style="display:none;">새로고침</button>
                       </div>
                       <div class="note-status-right">
                         <div id="viewerCountNote" style="display:none; color: var(--text-secondary);"></div>
@@ -2597,7 +2610,7 @@
 
         setupAutoSave();
 
-        function fetchMemos() {
+        function fetchMemos(forceCode) {
             if (codes.length === 0) {
                 sidebarList.innerHTML = '';
                 memoDetail.classList.add('hidden');
@@ -2622,12 +2635,23 @@
                         noMemoElem.classList.remove('hidden');
                         return;
                     }
+
                     noMemoElem.classList.add('hidden');
-                    if (!activeCode || !memos.find(m => m.code === activeCode)) {
-                        activeCode = memos[0].code;
+
+                    // 우선순위: 외부에서 강제 지정된 코드 → 기존 activeCode → 첫 번째 메모
+                    if (forceCode && memos.find(m => m.code === forceCode)) {
+                        activeCode = forceCode;
+                    } else if (!activeCode || !memos.find(m => m.code === activeCode)) {
+                        activeCode = memos[0]?.code || null;
                     }
-                    localStorage.setItem(activeCodeKey, activeCode);
-                    selectMemo(activeCode);
+
+                    if (activeCode) {
+                        localStorage.setItem(activeCodeKey, activeCode);
+                        selectMemo(activeCode);
+                    } else {
+                        memoDetail.classList.add('hidden');
+                        noMemoElem.classList.remove('hidden');
+                    }
                 });
         }
 
@@ -3029,8 +3053,13 @@
             if (activeCode &&
                 (memoTitle.value !== originalTitle ||
                     memoEditor.getMarkdown() !== originalContent)) {
+                const prevCode = activeCode;
                 updateTitle();      // 제목 저장
                 updateContent();    // 내용 저장
+                // 자동 저장 시에도 즉시 SAVE_NOTE 이벤트 전파
+                if (sendNoteSocketEvent) {
+                    sendNoteSocketEvent('SAVE_NOTE', prevCode);
+                }
             }
 
             activeCode = code;
@@ -3194,8 +3223,8 @@
                     noteCodeObjs.unshift({code}); // 새 메모를 목록 맨 앞에 배치
                     localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
                     codes = noteCodeObjs.map(o => o.code);
-                    activeCode = code;
-                    localStorage.setItem(activeCodeKey, activeCode);
+
+                    // 폴더에 있었다면 먼저 폴더에만 연결
                     if (activeFolderId) {
                         const folderObj = folders.find(f => f.id === activeFolderId);
                         if (folderObj && !folderObj.codes.includes(code)) {
@@ -3203,8 +3232,17 @@
                             saveFolders();
                         }
                     }
+
                     codeInput.value = '';
-                    fetchMemos();
+
+                    // 화면의 기존 제목/내용이 신규 메모에 저장되지 않도록 즉시 비워준다
+                    memoTitle.value = '';
+                    if (memoEditor) {
+                        memoEditor.setMarkdown('');
+                    }
+
+                    // 새 메모를 선택하도록 fetchMemos에 전달
+                    fetchMemos(code);
                     showNotification('메모가 추가되었습니다', 'success');
                 })
                 .catch(() => {
@@ -3438,21 +3476,32 @@
                         editStateElem.style.display = 'block';
                     }
                     break;
-                case 'EDIT_CANCEL_NOTE':
+                case 'EDIT_CANCEL_NOTE': {
                     const cancelStateElem = document.getElementById('editStatusNote');
                     if (cancelStateElem) {
-                        cancelStateElem.style.display = 'none';
+                        // "수정중입니다" 문구일 때만 숨김. "수정하였습니다" 상태는 유지
+                        if (cancelStateElem.textContent.includes('수정중입니다')) {
+                            cancelStateElem.style.display = 'none';
+                        }
                     }
                     break;
+                }
                 case 'SAVE_NOTE':
                     const saveStateElem = document.getElementById('editStatusNote');
                     if (saveStateElem) {
                         saveStateElem.textContent = '다른 사용자가 메모를 수정하였습니다';
                         saveStateElem.style.display = 'inline-block';
+                        saveStateElem.dataset.lock = 'true';
                     }
                     const refreshBtn = document.getElementById('refreshMemoBtn');
                     if (refreshBtn) {
                         refreshBtn.style.display = 'inline-block';
+                        const colorSource = document.getElementById('editStatusNote');
+                        if (colorSource) {
+                            const c = getComputedStyle(colorSource).color;
+                            refreshBtn.style.backgroundColor = c;
+                            refreshBtn.style.color = '#fff';
+                        }
                     }
                     break;
             }
@@ -3471,13 +3520,19 @@
         const refreshBtn = document.getElementById('refreshMemoBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
-                // 새로고침 (reload memo content)
+                refreshBtn.style.display = 'none';              // 먼저 숨겨 플래시 방지
+                refreshBtn.style.backgroundColor = '';
+                refreshBtn.style.color = '';
+
                 if (activeCode) {
-                    fetchMemos();
+                    fetchMemos();                               // 내용 새로고침
                 }
-                refreshBtn.style.display = 'none';
+
                 const editStateElem = document.getElementById('editStatusNote');
-                if (editStateElem) editStateElem.style.display = 'none';
+                if (editStateElem) {
+                    editStateElem.style.display = 'none';
+                    delete editStateElem.dataset.lock;
+                }
             });
         }
     });
