@@ -1293,8 +1293,6 @@
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.css"/>
     <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
-    <!-- Toast UI linkify plugin (auto‑detect URLs) -->
-    <script src="https://uicdn.toast.com/editor-plugin-linkify/latest/toastui-editor-plugin-linkify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -1890,6 +1888,13 @@
             return new Date(obj);
         }
 
+        // Ensure external links open with a proper scheme
+        function normalizeUrl(url) {
+            if (!url) return '';
+            if (/^https?:\/\//i.test(url) || /^\/\//.test(url)) return url; // already absolute or protocol-relative
+            return 'https://' + url.replace(/^\/+/, '');
+        }
+
         // Move the Toast UI toolbar into the fixed container so it never scrolls away
         function moveToolbar() {
             const toolbar = memoEditorContainer.querySelector('.te-toolbar');
@@ -1936,11 +1941,6 @@
                         rel: 'noopener noreferrer'
                     }
                 },
-                // let markdown parser turn bare URLs into links
-                markdown: {linkify: true},
-                plugins: (toastui.Editor.plugin && toastui.Editor.plugin.linkify)
-                    ? [toastui.Editor.plugin.linkify]
-                    : [],
                 toolbarItems: [
                     ['heading', 'bold', 'italic', 'strike'],
                     ['hr', 'quote'],
@@ -1958,9 +1958,11 @@
                 if (!memoEditorContainer._toastui_link_listener) {
                     memoEditorContainer.addEventListener('click', e => {
                         const anchor = e.target.closest('a');
-                        if (anchor && anchor.href) {
+                        if (anchor) {
+                            const raw = anchor.getAttribute('href') || '';
+                            const finalUrl = normalizeUrl(raw);
                             e.preventDefault();
-                            window.open(anchor.href, '_blank', 'noopener,noreferrer');
+                            window.open(finalUrl, '_blank', 'noopener,noreferrer');
                         }
                     });
                     memoEditorContainer._toastui_link_listener = true;
