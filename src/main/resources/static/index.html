@@ -423,7 +423,6 @@
         }
 
         .folder-header::before {
-            content: '▸';
             position: absolute;
             left: var(--spacing-sm);
             top: 50%;
@@ -435,13 +434,6 @@
 
         .folder-header.has-active-memo::before {
             color: var(--accent-primary); /* 메모 선택된 테두리 색상과 동일하게 */
-        }
-
-        .folder-list {
-            padding: var(--spacing-sm);
-            border-bottom: 1px solid var(--border-secondary);
-            max-height: 160px;
-            overflow-y: auto;
         }
 
         .folder-item {
@@ -1352,7 +1344,6 @@
                 </div>
             </div>
 
-            <div id="folderList" class="folder-list"></div>
             <div class="memo-list" id="memoList">
                 <!-- Memo items will be populated here -->
             </div>
@@ -3450,10 +3441,6 @@
         // ===== WebSocket for Note Realtime =====
         // WebSocket Setup
         const ws = new WebSocket(`${window.location.origin.replace('http', 'ws')}/socket/note/connect`);
-
-        ws.addEventListener('open', () => {
-            console.log('WebSocket 연결됨');
-        });
 
         ws.addEventListener('message', (event) => {
             const msg = JSON.parse(event.data);
