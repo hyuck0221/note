@@ -1,7 +1,7 @@
 package com.hshim.note.model.note
 
 import com.hshim.note.database.note.Note
-import io.autocrypt.sakarinblue.universe.util.DateUtil.dateToString
+import util.DateUtil.dateToString
 
 class NoteResponse(
     val code: String,

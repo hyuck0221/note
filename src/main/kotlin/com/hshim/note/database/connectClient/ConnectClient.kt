@@ -4,7 +4,7 @@ import com.hshim.note.database.base.BaseTimeEntity
 import com.hshim.note.database.converter.StringSetConverter
 import com.hshim.note.util.CodeUtil.generateRandomCode
 import jakarta.persistence.*
-import java.util.*
+import util.CommonUtil.ulid
 
 
 @Entity
@@ -12,7 +12,7 @@ import java.util.*
 class ConnectClient(
     @Id
     @Column(nullable = false)
-    val id: String = UUID.randomUUID().toString(),
+    val id: String = ulid(),
 
     @Column(nullable = false)
     val code: String = generateRandomCode(),
