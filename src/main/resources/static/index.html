@@ -1254,19 +1254,23 @@
             pointer-events: none;
             z-index: 5;
         }
+
         .note-status-left,
         .note-status-right {
             display: flex;
             align-items: center;
             pointer-events: auto;
         }
+
         .note-status-left {
             justify-content: flex-start;
             gap: 6px;
         }
+
         .note-status-right {
             justify-content: flex-end;
         }
+
         .refresh-btn {
             padding: 4px 10px;
             font-size: 12px;
@@ -1279,7 +1283,10 @@
             opacity: 0.95;
             transition: opacity .15s ease;
         }
-        .refresh-btn:hover { opacity: 1; }
+
+        .refresh-btn:hover {
+            opacity: 1;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
@@ -1365,13 +1372,13 @@
             <div id="memoDetail" class="memo-detail hidden">
                 <div class="memo-title-wrapper" style="position: relative;">
                     <div id="noteStatusBanner" class="note-status-banner">
-                      <div class="note-status-left">
-                        <div id="editStatusNote" style="display:none; color: var(--warning);"></div>
-                          <button id="refreshMemoBtn" class="refresh-btn" style="display:none;">새로고침</button>
-                      </div>
-                      <div class="note-status-right">
-                        <div id="viewerCountNote" style="display:none; color: var(--text-secondary);"></div>
-                      </div>
+                        <div class="note-status-left">
+                            <div id="editStatusNote" style="display:none; color: var(--warning);"></div>
+                            <button id="refreshMemoBtn" class="refresh-btn" style="display:none;">새로고침</button>
+                        </div>
+                        <div class="note-status-right">
+                            <div id="viewerCountNote" style="display:none; color: var(--text-secondary);"></div>
+                        </div>
                     </div>
                     <input id="memoTitle" class="memo-title-input" type="text" placeholder="메모 제목을 입력하세요..."
                            autocomplete="off"/>
@@ -3064,7 +3071,9 @@
                 memoDetail.classList.remove('hidden');
                 noMemoElem.classList.add('hidden');
                 memoTitle.value = memo.title || '';
+                memoTitle.blur();
                 memoEditor.setMarkdown(memo.content || '');
+                memoEditor.blur();
                 createDateElem.textContent = new Date(memo.createDate).toLocaleString();
                 updateDateElem.textContent = new Date(memo.updateDate).toLocaleString();
 
