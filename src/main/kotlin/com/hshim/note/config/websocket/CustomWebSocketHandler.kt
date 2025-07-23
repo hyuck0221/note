@@ -26,7 +26,7 @@ class CustomWebSocketHandler(private val sessionManager: SessionManager) : TextW
                 sessionManager.addEditSession(content.code, session)
             }
 
-            "EDIT_CANCEL" -> {
+            "EDIT_CANCEL_NOTE" -> {
                 val content = message.payload.jsonToClass<NoteMessageRequest.EditCancelNoteMessage>()
                 sessionManager.removeEditSession(content.code, session)
                 if (!sessionManager.isEditing(content.code))

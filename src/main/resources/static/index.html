@@ -417,8 +417,9 @@
             background: var(--folder-bg);
             color: var(--text-primary);
         }
+
         .folder-header.active .folder-description {
-            color: rgba(255,255,255,.9);
+            color: rgba(255, 255, 255, .9);
         }
 
         .folder-header::before {
@@ -1236,6 +1237,44 @@
         .modal-body ol {
             list-style-type: decimal !important;
         }
+
+        /* ---------- Memo Title Wrapper & Note Status Banner ---------- */
+        .memo-title-wrapper {
+            position: relative;
+            /* Remove width constraint to avoid unintended shrinkage */
+        }
+
+        /* Ensure memoTitle input takes full width of its container */
+        #memoTitle {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .note-status-banner {
+            position: absolute;
+            top: -28px;
+            left: 0;
+            right: 0;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            font-size: 13px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .note-status-left,
+        .note-status-right {
+            display: flex;
+            align-items: center;
+            pointer-events: auto;
+        }
+        .note-status-left {
+            justify-content: flex-start;
+            gap: 6px;
+        }
+        .note-status-right {
+            justify-content: flex-end;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
@@ -1322,8 +1361,19 @@
         <!-- Content Area -->
         <div class="content">
             <div id="memoDetail" class="memo-detail hidden">
-                <input id="memoTitle" class="memo-title-input" type="text" placeholder="메모 제목을 입력하세요..."
-                       autocomplete="off"/>
+                <div class="memo-title-wrapper" style="position: relative;">
+                    <div id="noteStatusBanner" class="note-status-banner">
+                      <div class="note-status-left">
+                        <div id="editStatusNote" style="display:none; color: var(--warning);"></div>
+                        <button id="refreshMemoBtn" class="btn btn-secondary btn-sm" style="display:none;">새로고침</button>
+                      </div>
+                      <div class="note-status-right">
+                        <div id="viewerCountNote" style="display:none; color: var(--text-secondary);"></div>
+                      </div>
+                    </div>
+                    <input id="memoTitle" class="memo-title-input" type="text" placeholder="메모 제목을 입력하세요..."
+                           autocomplete="off"/>
+                </div>
                 <div id="memoEditor" class="memo-editor-container"></div>
                 <div class="memo-metadata">
                     <div id="memoDates">
@@ -1610,7 +1660,7 @@
     document.addEventListener('DOMContentLoaded', () => {
 
         if (typeof marked !== 'undefined') {
-            marked.setOptions({ gfm: true, breaks: true });
+            marked.setOptions({gfm: true, breaks: true});
         }
 
         // 문서 클릭 시 열린 옵션 메뉴 닫기
@@ -1712,63 +1762,68 @@
             });
         }
 
-            /* ---------- Folder Invite ---------- */
-    function showFolderInviteModal(sharedLink, expireDate) {
-        const modal = document.getElementById('folderInviteModal');
-        const linkInput = document.getElementById('folderInviteLink');
-        const expireInput = document.getElementById('folderInviteExpire');
-        const qrWrap = document.getElementById('folderInviteQr');
+        /* ---------- Folder Invite ---------- */
+        function showFolderInviteModal(sharedLink, expireDate) {
+            const modal = document.getElementById('folderInviteModal');
+            const linkInput = document.getElementById('folderInviteLink');
+            const expireInput = document.getElementById('folderInviteExpire');
+            const qrWrap = document.getElementById('folderInviteQr');
 
-        linkInput.value = sharedLink;
-        expireInput.value = expireDate.replace('T', ' ').substring(0, 16);
+            linkInput.value = sharedLink;
+            expireInput.value = expireDate.replace('T', ' ').substring(0, 16);
 
-        qrWrap.innerHTML = '';
-        new QRCode(qrWrap, {
-            text: sharedLink,
-            width: 128,
-            height: 128,
-            colorDark: document.body.classList.contains('dark-mode') ? '#FFFFFF' : '#000000',
-            colorLight: document.body.classList.contains('dark-mode') ? '#1A1A1A' : '#FFFFFF',
-        });
+            qrWrap.innerHTML = '';
+            new QRCode(qrWrap, {
+                text: sharedLink,
+                width: 128,
+                height: 128,
+                colorDark: document.body.classList.contains('dark-mode') ? '#FFFFFF' : '#000000',
+                colorLight: document.body.classList.contains('dark-mode') ? '#1A1A1A' : '#FFFFFF',
+            });
 
-        document.getElementById('copyFolderInviteLinkBtn').onclick = () => {
-            linkInput.select();
-            document.execCommand('copy');
-            showNotification('링크가 복사되었습니다', 'success');
-        };
+            document.getElementById('copyFolderInviteLinkBtn').onclick = () => {
+                linkInput.select();
+                document.execCommand('copy');
+                showNotification('링크가 복사되었습니다', 'success');
+            };
 
-        const closeBtn = document.getElementById('folderInviteClose');
-        const hide = () => modal.classList.remove('show');
-        closeBtn.onclick = hide;
-        modal.onclick = e => { if (e.target === modal) hide(); };
+            const closeBtn = document.getElementById('folderInviteClose');
+            const hide = () => modal.classList.remove('show');
+            closeBtn.onclick = hide;
+            modal.onclick = e => {
+                if (e.target === modal) hide();
+            };
 
-        modal.classList.add('show');
-    }
-
-    async function inviteFolder(folderObj) {
-        if (!folderObj || !folderObj.codes || folderObj.codes.length === 0) {
-            showNotification('폴더에 메모가 없습니다', 'error');
-            return;
+            modal.classList.add('show');
         }
 
-        const baseUrl   = window.location.origin;
-        const codesStr  = folderObj.codes.join(',');
-        let inviteLink  = `${baseUrl}/page/note/invite?code=${codesStr}&folder=${encodeURIComponent(folderObj.name)}`;
-        if (folderObj.description) {
-            inviteLink += `&folderDescription=${encodeURIComponent(folderObj.description)}`;
+        async function inviteFolder(folderObj) {
+            if (!folderObj || !folderObj.codes || folderObj.codes.length === 0) {
+                showNotification('폴더에 메모가 없습니다', 'error');
+                return;
+            }
+
+            const baseUrl = window.location.origin;
+            const codesStr = folderObj.codes.join(',');
+            let inviteLink = `${baseUrl}/page/note/invite?code=${codesStr}&folder=${encodeURIComponent(folderObj.name)}`;
+            if (folderObj.description) {
+                inviteLink += `&folderDescription=${encodeURIComponent(folderObj.description)}`;
+            }
+
+            const res = await fetch(`${baseUrl}/share/link`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({link: inviteLink, remainingCnt: 1000})
+            });
+            if (!res.ok) {
+                showNotification('공유 링크 생성 실패', 'error');
+                return;
+            }
+
+            const data = await res.json();  // ShareBody
+            const sharedLink = `${baseUrl}/page/share/${data.code}`;
+            showFolderInviteModal(sharedLink, data.expireDate);
         }
-
-        const res = await fetch(`${baseUrl}/share/link`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ link: inviteLink, remainingCnt: 1000 })
-        });
-        if (!res.ok) { showNotification('공유 링크 생성 실패', 'error'); return; }
-
-        const data       = await res.json();  // ShareBody
-        const sharedLink = `${baseUrl}/page/share/${data.code}`;
-        showFolderInviteModal(sharedLink, data.expireDate);
-    }
 
         // 메모 삭제 함수
         function deleteNote(noteCode) {
@@ -1869,7 +1924,7 @@
                     }
                 },
                 // let markdown parser turn bare URLs into links
-                markdown: { linkify: true },
+                markdown: {linkify: true},
                 plugins: (toastui.Editor.plugin && toastui.Editor.plugin.linkify)
                     ? [toastui.Editor.plugin.linkify]
                     : [],
@@ -1971,7 +2026,7 @@
             const urlPattern = /^https?:\/\/[^\s]+$/i;
             if (urlPattern.test(text) && memoEditor) {
                 ev.preventDefault();
-                memoEditor.exec('link', { url: text, linkText: text });
+                memoEditor.exec('link', {url: text, linkText: text});
             }
         });
 
@@ -1989,7 +2044,7 @@
                 const last = words[words.length - 2] || '';           // 직전 단어
                 const urlPattern = /^https?:\/\/[^\s]+$/i;
                 if (urlPattern.test(last)) {
-                    memoEditor.exec('link', { url: last, linkText: last });
+                    memoEditor.exec('link', {url: last, linkText: last});
                 }
             }, 0);
         });
@@ -2953,6 +3008,24 @@
 
         function selectMemo(code) {
 
+            const editStatusNote = document.getElementById('editStatusNote');
+            const refreshMemoBtn = document.getElementById('refreshMemoBtn');
+            const viewerCountNote = document.getElementById('viewerCountNote');
+
+            if (editStatusNote) {
+                editStatusNote.style.display = 'none';
+                editStatusNote.textContent = '';
+            }
+
+            if (refreshMemoBtn) {
+                refreshMemoBtn.style.display = 'none';
+            }
+
+            if (viewerCountNote) {
+                viewerCountNote.style.display = 'none';
+                viewerCountNote.textContent = '';
+            }
+
             if (activeCode &&
                 (memoTitle.value !== originalTitle ||
                     memoEditor.getMarkdown() !== originalContent)) {
@@ -2962,6 +3035,8 @@
 
             activeCode = code;
             localStorage.setItem(activeCodeKey, activeCode);
+            // WebSocket: join note
+            sendNoteSocketEvent && sendNoteSocketEvent('JOIN_NOTE', code);
             const memo = memos.find(m => m.code === code);
             if (memo) {
                 memoDetail.classList.remove('hidden');
@@ -2975,6 +3050,8 @@
                 originalContent = memoEditor.getMarkdown() || '';
                 renderList();
             }
+            // Reset editStarted flag
+            editStarted = false;
         }
 
         // 제목만 저장
@@ -3001,6 +3078,8 @@
                         renderList();
                     }
                     showNotification('제목이 저장되었습니다', 'success');
+                    // WebSocket: notify save
+                    sendNoteSocketEvent && sendNoteSocketEvent('SAVE_NOTE', activeCode);
                 })
                 .catch((e) => showNotification('제목 저장에 실패했습니다', 'error'));
 
@@ -3031,11 +3110,45 @@
                         renderList();
                     }
                     showNotification('내용이 저장되었습니다', 'success');
+                    // WebSocket: notify save
+                    sendNoteSocketEvent && sendNoteSocketEvent('SAVE_NOTE', activeCode);
                 })
                 .catch(() => showNotification('내용 저장에 실패했습니다', 'error'));
 
             if (activeCode === codeToSave) originalContent = memoEditor.getMarkdown();
         }
+
+        // ---- Edit State Detector ----
+        function updateEditState() {
+            const title = memoTitle.value.trim();
+            const content = memoEditor.getMarkdown();
+            if (!editStarted && (title !== originalTitle || content !== originalContent)) {
+                sendNoteSocketEvent && sendNoteSocketEvent('EDIT_NOTE', activeCode);
+                editStarted = true;
+            } else if (editStarted && title === originalTitle && content === originalContent) {
+                sendNoteSocketEvent && sendNoteSocketEvent('EDIT_CANCEL_NOTE', activeCode);
+                editStarted = false;
+            }
+        }
+
+        memoTitle.addEventListener('input', updateEditState);
+        // Polling method to detect edits in title/content
+        setInterval(() => {
+            if (!memoEditor || !activeCode) return;
+
+            const currentContent = memoEditor.getMarkdown();
+            const currentTitle = memoTitle.value.trim();
+
+            const changed = currentTitle !== originalTitle || currentContent !== originalContent;
+
+            if (!editStarted && changed) {
+                sendNoteSocketEvent && sendNoteSocketEvent('EDIT_NOTE', activeCode);
+                editStarted = true;
+            } else if (editStarted && !changed) {
+                sendNoteSocketEvent && sendNoteSocketEvent('EDIT_CANCEL_NOTE', activeCode);
+                editStarted = false;
+            }
+        }, 500);
 
         function generateCode() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -3293,7 +3406,84 @@
 
         fetchMemos();
         renderList();
+
+        // ===== WebSocket for Note Realtime =====
+        // WebSocket Setup
+        const ws = new WebSocket('ws://localhost:8080/socket/note/connect');
+
+        ws.addEventListener('open', () => {
+            console.log('WebSocket 연결됨');
+        });
+
+        ws.addEventListener('message', (event) => {
+            const msg = JSON.parse(event.data);
+            if (!msg.eventName) return;
+
+            switch (msg.eventName) {
+                case 'USER_CNT_NOTE':
+                    const viewerNoteElem = document.getElementById('viewerCountNote');
+                    if (viewerNoteElem) {
+                        if (msg.userCnt >= 2) {
+                            viewerNoteElem.textContent = `${msg.userCnt}명이 보고있습니다`;
+                            viewerNoteElem.style.display = 'block';
+                        } else {
+                            viewerNoteElem.style.display = 'none';
+                        }
+                    }
+                    break;
+                case 'EDIT_NOTE':
+                    const editStateElem = document.getElementById('editStatusNote');
+                    if (editStateElem) {
+                        editStateElem.textContent = '다른 사용자가 메모를 수정중입니다';
+                        editStateElem.style.display = 'block';
+                    }
+                    break;
+                case 'EDIT_CANCEL_NOTE':
+                    const cancelStateElem = document.getElementById('editStatusNote');
+                    if (cancelStateElem) {
+                        cancelStateElem.style.display = 'none';
+                    }
+                    break;
+                case 'SAVE_NOTE':
+                    const saveStateElem = document.getElementById('editStatusNote');
+                    if (saveStateElem) {
+                        saveStateElem.textContent = '다른 사용자가 메모를 수정하였습니다';
+                        saveStateElem.style.display = 'inline-block';
+                    }
+                    const refreshBtn = document.getElementById('refreshMemoBtn');
+                    if (refreshBtn) {
+                        refreshBtn.style.display = 'inline-block';
+                    }
+                    break;
+            }
+        });
+
+        function sendNoteSocketEvent(eventName, code) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({eventName, code}));
+            }
+        }
+
+        // Edit flag for note
+        let editStarted = false;
+
+        // 취소 버튼 UI handler
+        const refreshBtn = document.getElementById('refreshMemoBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                // 새로고침 (reload memo content)
+                if (activeCode) {
+                    fetchMemos();
+                }
+                refreshBtn.style.display = 'none';
+                const editStateElem = document.getElementById('editStatusNote');
+                if (editStateElem) editStateElem.style.display = 'none';
+            });
+        }
     });
+</script>
+</body>
+</html>
 </script>
 </body>
 </html>
