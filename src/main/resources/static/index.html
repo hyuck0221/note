@@ -1891,17 +1891,6 @@
             });
             saveFolders();
 
-            // connectClientCode가 있으면 서버에서도 삭제
-            const connectCode = localStorage.getItem('connectClientCode');
-            if (connectCode) {
-                fetch(`/connect/client/note/codes/${noteCode}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Connect-Code': connectCode
-                    }
-                }).catch(err => console.error('서버 삭제 실패:', err));
-            }
-
             // 현재 활성화된 메모가 삭제된 메모인 경우 처리
             if (activeCode === noteCode) {
                 if (codes.length > 0) {
@@ -2016,36 +2005,147 @@
         const connectCodeKey = 'connectClientCode';
         let connectClientResponseData = null;
 
+        // ---- Client Integration LocalStorage Sync (new) ----
+        const CONNECT_SYNC_KEYS = ['activeMemoCode','collapsedFolders','folders','noteCodes','notificationNumber','sidebarOrder','theme'];
+
+        function tryParse(value) { try { return JSON.parse(value); } catch(e){ return value; } }
+
+        function buildLocalStoragePayload() {
+            const payload = {};
+            CONNECT_SYNC_KEYS.forEach(k => {
+                const v = localStorage.getItem(k);
+                if (v === null) {
+                    payload[k] = null;
+                } else {
+                    payload[k] = tryParse(v);
+                }
+            });
+            return payload;
+        }
+
+        let connectSyncSuspended = false;
+        let connectSyncTimer = null;
+        let lastConnectPayloadStr = null;
+
+        function applyLocalStorageJson(lsJson) {
+            if (typeof lsJson === 'string') {
+                try { lsJson = JSON.parse(lsJson); } catch (_) { lsJson = {}; }
+            }
+            connectSyncSuspended = true;
+            let changed = false;
+            const toStored = (val) => {
+                if (val === null || typeof val === 'undefined') return null;
+                if (typeof val === 'string') return val;
+                try { return JSON.stringify(val); } catch (_) { return String(val); }
+            };
+
+            CONNECT_SYNC_KEYS.forEach(k => {
+                if (!Object.prototype.hasOwnProperty.call(lsJson, k)) return;
+                const nextStr = toStored(lsJson[k]);
+                const curStr = localStorage.getItem(k);
+                if (nextStr !== curStr) {
+                    changed = true;
+                    if (nextStr === null) {
+                        localStorage.removeItem(k);
+                    } else {
+                        localStorage.setItem(k, nextStr);
+                    }
+                }
+            });
+            setTimeout(() => { connectSyncSuspended = false; }, 50);
+            return changed;
+        }
+
+        function scheduleConnectSync() {
+            if (connectSyncSuspended) return;
+            const code = localStorage.getItem(connectCodeKey);
+            if (!code) return;
+            if (connectSyncTimer) clearTimeout(connectSyncTimer);
+            connectSyncTimer = setTimeout(() => {
+                const payload = buildLocalStoragePayload();
+                const payloadStr = JSON.stringify(payload);
+                if (payloadStr === lastConnectPayloadStr) return; // skip duplicate payloads
+                lastConnectPayloadStr = payloadStr;
+                fetch('/connect/client', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json', 'Connect-Code': code},
+                    body: payloadStr
+                }).catch(() => {});
+            }, 1000);
+        }
+
+        // Patch Storage APIs to observe changes on the tracked keys
+        const _origSetItem = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(key, value) {
+            _origSetItem.apply(this, arguments);
+            if (CONNECT_SYNC_KEYS.includes(key)) scheduleConnectSync();
+        };
+        const _origRemoveItem = Storage.prototype.removeItem;
+        Storage.prototype.removeItem = function(key) {
+            _origRemoveItem.apply(this, arguments);
+            if (CONNECT_SYNC_KEYS.includes(key)) scheduleConnectSync();
+        };
+        // Cross-tab changes
+        window.addEventListener('storage', (e) => {
+            if (CONNECT_SYNC_KEYS.includes(e.key)) scheduleConnectSync();
+        });
+
+        // Fetch wrapper to strip Connect-Code from non /connect/client requests
+        (function() {
+            const _origFetch = window.fetch;
+            window.fetch = function(input, init = {}) {
+                const url = (typeof input === 'string') ? input : (input && input.url ? input.url : '');
+                const isConnectEndpoint = /\/connect\/client(\b|\/|\?)/i.test(url);
+                if (init && init.headers) {
+                    const headers = new Headers(init.headers);
+                    if (!isConnectEndpoint) {
+                        headers.delete('Connect-Code');
+                        headers.delete('connect-code');
+                    }
+                    init.headers = headers;
+                }
+                return _origFetch(input, init);
+            };
+        })();
+
         function initConnectClient() {
             const stored = localStorage.getItem(connectCodeKey);
-            if (stored) {
-                fetch('/connect/client', {headers: {'Connect-Code': stored}})
-                    .then(res => res.json())
-                    .then(data => {
-                        if (!data) {
-                            localStorage.removeItem(connectCodeKey);
-                            location.reload();
-                        } else {
-                            connectClientResponseData = data;
-                            const returnedCodes = data.noteCodes;
-                            const stored = JSON.parse(localStorage.getItem(noteCodesKey) || '[]');
-                            const merged = stored.map(o => o.code).filter(code => returnedCodes.includes(code));
-                            returnedCodes.forEach(code => {
-                                if (!merged.includes(code)) merged.push(code);
-                            });
-                            noteCodeObjs = merged.map(code => ({code}));
-                            localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
-                            codes = noteCodeObjs.map(o => o.code);
-                        }
-                    })
-                    .catch(() => {
+            if (!stored) return;
+
+            const initFlagKey = `connectInit:${stored}`;
+
+            fetch('/connect/client', { headers: { 'Connect-Code': stored } })
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (!data || !data.localStorageJson) {
                         localStorage.removeItem(connectCodeKey);
+                        sessionStorage.removeItem(initFlagKey);
+                        return;
+                    }
+                    connectClientResponseData = data;
+                    // applyLocalStorageJson can accept string or object and returns whether any key actually changed
+                    const didChange = applyLocalStorageJson(data.localStorageJson);
+
+                    // Reload exactly once on first load if state changed so that in-memory vars pick up LS
+                    if (didChange && !sessionStorage.getItem(initFlagKey)) {
+                        sessionStorage.setItem(initFlagKey, '1');
                         location.reload();
-                    });
-            }
+                        return;
+                    }
+
+                    // Mark initialized to avoid future auto reloads within this tab session
+                    if (!sessionStorage.getItem(initFlagKey)) {
+                        sessionStorage.setItem(initFlagKey, '1');
+                    }
+                })
+                .catch(() => {
+                    // Keep page usable; just clear the link for now
+                    localStorage.removeItem(connectCodeKey);
+                });
         }
 
         initConnectClient();
+        scheduleConnectSync();
 
         currentMenuCode = null;
         const themeToggle = $('#themeToggle');
@@ -2480,7 +2580,12 @@
         });
 
         $('#createClientBtn').addEventListener('click', () => {
-            fetch('/connect/client?' + codes.map(c => 'noteCodes=' + encodeURIComponent(c)).join('&'), {method: 'POST'})
+            const payload = buildLocalStoragePayload();
+            fetch('/connect/client', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            })
                 .then(res => res.json())
                 .then(data => {
                     localStorage.setItem(connectCodeKey, data.code);
@@ -2490,6 +2595,9 @@
                     status.classList.remove('hidden');
                     $('#clientDialogBackBtn').classList.remove('hidden');
                     ['createClientBtn', 'connectClientBtn'].forEach(id => $('#' + id).classList.add('hidden'));
+                    if (data.localStorageJson) {
+                        applyLocalStorageJson(data.localStorageJson);
+                    }
                 });
         });
 
@@ -2516,7 +2624,7 @@
                         return;
                     }
                     connectClientResponseData = data;
-                    statusElem.textContent = '확인되었습니다\n아래 연결 버튼을 누르면 기존 등록한 메모를 사라집니다';
+                    statusElem.textContent = '확인되었습니다\n아래 [연결 실행]을 누르면 현재 로컬 설정이 클라이언트 설정으로 덮어씌워집니다';
                     statusElem.classList.remove('hidden');
                     $('#clientConnectExecuteBtn').classList.remove('hidden');
                     $('#clientCodeConfirmBtn').disabled = true;
@@ -2530,8 +2638,9 @@
         $('#clientConnectExecuteBtn').addEventListener('click', () => {
             const data = connectClientResponseData;
             localStorage.setItem(connectCodeKey, data.code);
-            noteCodeObjs = data.noteCodes.map(c => ({code: c}));
-            localStorage.setItem(noteCodesKey, JSON.stringify(noteCodeObjs));
+            if (data.localStorageJson) {
+                applyLocalStorageJson(data.localStorageJson);
+            }
             location.reload();
         });
 

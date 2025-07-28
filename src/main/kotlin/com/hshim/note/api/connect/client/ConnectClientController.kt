@@ -7,6 +7,7 @@ import com.hshim.note.service.connect.client.ConnectClientQueryService
 import com.hshim.note.service.note.NoteCommandService
 import com.hshim.note.service.note.NoteQueryService
 import org.springframework.web.bind.annotation.*
+import util.ClassUtil.classToJson
 
 @RestController
 @RequestMapping("/connect/client")
@@ -15,15 +16,17 @@ class ConnectClientController(
     private val connectClientCommandService: ConnectClientCommandService,
 ) {
     @PostMapping
-    fun init(@RequestParam noteCodes: List<String>): ConnectClientResponse {
-        return connectClientCommandService.buildCode(noteCodes.toMutableSet())
+    fun init(@RequestBody localStorageJson: Map<String, Any?>): ConnectClientResponse {
+        return connectClientCommandService.build(localStorageJson.classToJson())
     }
 
-    @DeleteMapping("/note/codes/{code}")
-    fun removeNoteCode(
+    @PutMapping
+    fun update(
         @RequestHeader("Connect-Code") connectCode: String,
-        @PathVariable code: String
-    ) = connectClientCommandService.removeNoteCode(connectCode, code)
+        @RequestBody localStorageJson: Map<String, Any?>
+    ): ConnectClientResponse {
+        return connectClientCommandService.update(connectCode, localStorageJson.classToJson())
+    }
 
     @DeleteMapping
     fun delete(

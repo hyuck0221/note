@@ -3,7 +3,6 @@ package com.hshim.note.service.note
 import com.hshim.note.database.note.Note
 import com.hshim.note.database.note.repository.NoteRepository
 import com.hshim.note.model.note.NoteResponse
-import com.hshim.note.service.connect.client.ConnectClientCommandService
 import com.hshim.note.util.CodeUtil.generateRandomCode
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -11,13 +10,9 @@ import org.springframework.transaction.annotation.Transactional
 
 @Transactional
 @Service
-class NoteCommandService(
-    private val noteRepository: NoteRepository,
-    private val connectClientCommandService: ConnectClientCommandService,
-) {
+class NoteCommandService(private val noteRepository: NoteRepository) {
 
-
-    fun init(code: String?, connectCode: String?): NoteResponse {
+    fun init(code: String?): NoteResponse {
         var note = code?.let { noteRepository.findByIdOrNull(it) }
         if (note == null) {
             var code = code ?: generateRandomCode()
@@ -27,7 +22,6 @@ class NoteCommandService(
             note = noteRepository.save(Note(code))
         }
 
-        connectCode?.let { connectClientCommandService.addCode(it, note.code) }
         return NoteResponse(note)
     }
 

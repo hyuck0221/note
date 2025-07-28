@@ -1,9 +1,12 @@
 package com.hshim.note.database.connectClient
 
 import com.hshim.note.database.base.BaseTimeEntity
-import com.hshim.note.database.converter.StringSetConverter
 import com.hshim.note.util.CodeUtil.generateRandomCode
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.Table
+import org.hibernate.annotations.ColumnDefault
 import util.CommonUtil.ulid
 
 
@@ -17,7 +20,7 @@ class ConnectClient(
     @Column(nullable = false)
     val code: String = generateRandomCode(),
 
-    @Column(nullable = false, columnDefinition = "varchar(255)")
-    @Convert(converter = StringSetConverter::class)
-    val noteCodes: MutableSet<String>,
+    @Column(nullable = false, columnDefinition = "TEXT")
+    @ColumnDefault("''")
+    var localStorageJson: String,
 ) : BaseTimeEntity()
