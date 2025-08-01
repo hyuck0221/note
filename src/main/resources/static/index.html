@@ -1061,80 +1061,183 @@
             }
         }
 
-        /* ---------- Toast UI Editor Customization ---------- */
-        .toastui-editor-defaultUI,
-        .toastui-editor-dark {
-            border: none !important;
-            background: transparent !important;
+        /* ---------- WYSIWYG Editor Customization ---------- */
+        .memo-editor-container {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
-
-        .toastui-editor-defaultUI .te-toolbar,
-        .toastui-editor-dark .te-toolbar {
-            border-bottom: 1px solid var(--border-primary) !important;
-            background: var(--surface-secondary) !important;
-            padding: var(--spacing-sm) !important;
-            position: sticky !important;
+        
+        .wysiwyg-wrapper {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .wysiwyg-toolbar {
+            background: var(--surface-secondary);
+            border: 1px solid var(--border-primary);
+            border-bottom: none;
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            padding: 8px 12px;
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            position: sticky;
             top: 0;
             z-index: 10;
+            flex-shrink: 0;
         }
-
-        .toastui-editor-defaultUI .te-toolbar button,
-        .toastui-editor-dark .te-toolbar button {
-            border-radius: var(--radius-sm) !important;
-            margin: 2px !important;
-            transition: all var(--transition-fast) !important;
+        
+        .wysiwyg-toolbar button {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-primary);
+            border-radius: var(--radius-sm);
+            padding: 6px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            min-width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
         }
-
-        .toastui-editor-defaultUI .te-toolbar button:hover,
-        .toastui-editor-dark .te-toolbar button:hover {
-            background: var(--surface-primary) !important;
+        
+        .wysiwyg-toolbar button:hover {
+            background: var(--surface-primary);
+            border-color: var(--border-primary);
         }
-
-        .toastui-editor-defaultUI .te-md-container,
-        .toastui-editor-dark .te-md-container {
-            background: var(--surface-primary) !important;
-            color: var(--text-primary) !important;
+        
+        .wysiwyg-toolbar button.active {
+            background: var(--accent-primary);
+            color: white;
         }
-
-        .toastui-editor-defaultUI .te-preview,
-        .toastui-editor-dark .te-preview {
-            background: var(--surface-primary) !important;
-            color: var(--text-primary) !important;
+        
+        .wysiwyg-toolbar .separator {
+            width: 1px;
+            height: 20px;
+            background: var(--border-primary);
+            margin: 0 4px;
+            flex-shrink: 0;
         }
-
-        /* Custom class to apply dark mode colors while using light mode settings */
-        .dark-mode-colors {
-            /* Apply dark mode colors from the toastui-editor-dark.css */
-            --toastui-editor-main-color: #4b96e6 !important;
-            --toastui-editor-text-color: #e5e5e5 !important;
-            --toastui-editor-bg-color: #121212 !important;
-            --toastui-editor-border-color: #333 !important;
-            --toastui-editor-toolbar-bg-color: #232323 !important;
-            --toastui-editor-toolbar-active-color: #555 !important;
-            --toastui-editor-scrollbar-thumb-color: #666 !important;
-            --toastui-editor-scrollbar-thumb-active-color: #999 !important;
-            --toastui-editor-highlight-color: #fff !important;
-            --toastui-editor-highlight-background-color: #134a8e !important;
+        
+        .wysiwyg-editor {
+            background: var(--surface-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
+            padding: 16px;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            outline: none;
+            overflow-y: auto;
+            flex: 1;
+            height: 0; /* 플렉스 아이템이 컨테이너에 맞게 크기 조정되도록 */
         }
-
-        /* Apply dark mode colors to specific editor elements */
-        .dark-mode-colors .toastui-editor-contents,
-        .dark-mode-colors .ProseMirror {
-            color: var(--text-primary) !important;
-            background-color: var(--surface-primary) !important;
+        
+        .wysiwyg-editor:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
         }
-
-        .dark-mode-colors .toastui-editor-toolbar,
-        .dark-mode-colors .toastui-editor-defaultUI-toolbar {
-            background-color: var(--surface-secondary) !important;
-            border-bottom: 1px solid var(--border-primary) !important;
+        
+        /* Markdown rendered content styles */
+        .wysiwyg-editor h1 {
+            font-size: 2em;
+            font-weight: 600;
+            margin: 0.5em 0;
+            border-bottom: 2px solid var(--border-primary);
+            padding-bottom: 0.3em;
         }
-
-        .dark-mode-colors .toastui-editor-popup,
-        .dark-mode-colors .toastui-editor-context-menu {
-            background-color: var(--surface-elevated) !important;
-            border: 1px solid var(--border-primary) !important;
-            color: var(--text-primary) !important;
+        
+        .wysiwyg-editor h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin: 0.5em 0;
+        }
+        
+        .wysiwyg-editor h3 {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin: 0.5em 0;
+        }
+        
+        .wysiwyg-editor p {
+            margin: 0.75em 0;
+        }
+        
+        .wysiwyg-editor ul, .wysiwyg-editor ol {
+            margin: 0.75em 0;
+            padding-left: 1.5em;
+        }
+        
+        .wysiwyg-editor blockquote {
+            border-left: 4px solid var(--accent-primary);
+            margin: 0.75em 0;
+            padding-left: 1em;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+        
+        .wysiwyg-editor code {
+            background: var(--surface-secondary);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+        }
+        
+        .wysiwyg-editor pre {
+            background: var(--surface-secondary);
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            overflow-x: auto;
+            margin: 0.75em 0;
+        }
+        
+        .wysiwyg-editor pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        .wysiwyg-editor a {
+            color: var(--accent-primary);
+            text-decoration: underline;
+        }
+        
+        .wysiwyg-editor strong {
+            font-weight: 600;
+        }
+        
+        .wysiwyg-editor em {
+            font-style: italic;
+        }
+        
+        .wysiwyg-editor table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.75em 0;
+            border: 1px solid var(--border-primary);
+        }
+        
+        .wysiwyg-editor th,
+        .wysiwyg-editor td {
+            border: 1px solid var(--border-primary);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .wysiwyg-editor th {
+            background: var(--surface-secondary);
+            font-weight: 600;
+        }
+        
+        .wysiwyg-editor tr:nth-child(even) {
+            background: var(--surface-secondary);
         }
 
         /* ---------- Sticky Markdown Toolbar ---------- */
@@ -1289,11 +1392,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
-    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.css"/>
-    <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 <script>
@@ -1911,38 +2010,330 @@
 
         window.addEventListener('resize', updateStickyLeft);
 
-        // Initialize or reinitialize the ToastUI editor
-        function initEditor(content = '') {
-            // Use theme based on current mode
-            const isDarkMode = document.body.classList.contains('dark-mode');
-            const editor = new toastui.Editor({
-                el: $('#memoEditor'),
-                height: '100%',
-                width: '100%',
-                initialEditType: 'wysiwyg',
-                previewStyle: 'vertical',
-                /* auto‑link URLs + open in new tab */
-                htmlRender: {
-                    linkAttributes: {
-                        target: '_blank',
-                        rel: 'noopener noreferrer'
+        // Initialize or reinitialize the Milkdown Crepe editor
+        async function initEditor(content = '') {
+            // Clear the container first
+            const container = document.getElementById('memoEditor');
+            container.innerHTML = '';
+            
+            // Create WYSIWYG editor structure
+            const editorWrapper = document.createElement('div');
+            editorWrapper.className = 'wysiwyg-wrapper';
+            
+            // Create toolbar
+            const toolbar = document.createElement('div');
+            toolbar.className = 'wysiwyg-toolbar';
+            toolbar.innerHTML = `
+                <button data-cmd="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+                <button data-cmd="italic" title="Italic (Ctrl+I)"><em>I</em></button>
+                <button data-cmd="strikethrough" title="Strikethrough">S̶</button>
+                <div class="separator"></div>
+                <button data-cmd="h1" title="Heading 1">H1</button>
+                <button data-cmd="h2" title="Heading 2">H2</button>
+                <button data-cmd="h3" title="Heading 3">H3</button>
+                <div class="separator"></div>
+                <button data-cmd="ul" title="Bullet List">• List</button>
+                <button data-cmd="ol" title="Numbered List">1. List</button>
+                <button data-cmd="quote" title="Quote">❝</button>
+                <div class="separator"></div>
+                <button data-cmd="link" title="Link">🔗</button>
+                <button data-cmd="table" title="Table">📋</button>
+                <button data-cmd="code" title="Code">&lt;/&gt;</button>
+            `;
+            
+            // Create editor div
+            const editor = document.createElement('div');
+            editor.className = 'wysiwyg-editor';
+            editor.contentEditable = true;
+            editor.setAttribute('data-placeholder', '메모를 입력하세요...');
+            
+            editorWrapper.appendChild(toolbar);
+            editorWrapper.appendChild(editor);
+            container.appendChild(editorWrapper);
+            
+            // Internal markdown content
+            let markdownContent = content || "# 새 메모\n\n내용을 입력하세요...";
+            
+            // Render initial content
+            const renderContent = () => {
+                if (markdownContent.trim() === '') {
+                    editor.innerHTML = '<p><br></p>';
+                } else {
+                    editor.innerHTML = marked.parse(markdownContent);
+                }
+            };
+            
+            // Convert HTML back to markdown
+            const htmlToMarkdown = (html) => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                let markdownParts = [];
+                
+                // Process each top-level element
+                Array.from(tempDiv.children).forEach(el => {
+                    const tagName = el.tagName.toLowerCase();
+                    const text = el.textContent.trim();
+                    
+                    if (!text && tagName !== 'br') return;
+                    
+                    switch (tagName) {
+                        case 'h1':
+                            markdownParts.push(`# ${text}`);
+                            break;
+                        case 'h2':
+                            markdownParts.push(`## ${text}`);
+                            break;
+                        case 'h3':
+                            markdownParts.push(`### ${text}`);
+                            break;
+                        case 'p':
+                            if (text) {
+                                // Handle inline formatting within paragraphs
+                                let formattedText = el.innerHTML;
+                                formattedText = formattedText.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**');
+                                formattedText = formattedText.replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**');
+                                formattedText = formattedText.replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+                                formattedText = formattedText.replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*');
+                                formattedText = formattedText.replace(/<strike[^>]*>(.*?)<\/strike>/gi, '~~$1~~');
+                                formattedText = formattedText.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)');
+                                formattedText = formattedText.replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`');
+                                formattedText = formattedText.replace(/<br\s*\/?>/gi, '\n');
+                                formattedText = formattedText.replace(/<[^>]+>/g, ''); // Remove remaining HTML tags
+                                markdownParts.push(formattedText);
+                            }
+                            break;
+                        case 'ul':
+                            const ulItems = Array.from(el.querySelectorAll('li')).map(li => `- ${li.textContent.trim()}`);
+                            markdownParts.push(ulItems.join('\n'));
+                            break;
+                        case 'ol':
+                            const olItems = Array.from(el.querySelectorAll('li')).map((li, index) => `${index + 1}. ${li.textContent.trim()}`);
+                            markdownParts.push(olItems.join('\n'));
+                            break;
+                        case 'blockquote':
+                            markdownParts.push(`> ${text}`);
+                            break;
+                        case 'pre':
+                            markdownParts.push(`\`\`\`\n${text}\n\`\`\``);
+                            break;
+                        case 'table':
+                            const tableMarkdown = convertTableToMarkdown(el);
+                            if (tableMarkdown) markdownParts.push(tableMarkdown);
+                            break;
+                        case 'br':
+                            markdownParts.push('');
+                            break;
+                        default:
+                            if (text) markdownParts.push(text);
                     }
-                },
-                toolbarItems: [
-                    ['heading', 'bold', 'italic', 'strike'],
-                    ['hr', 'quote'],
-                    ['ul', 'ol', 'task', 'table'],
-                    ['link', 'code', 'codeblock']
-                ],
-                hideModeSwitch: true,
-                initialValue: content,
-                // Use dark theme when in dark mode
-                theme: isDarkMode ? 'dark' : 'light'
+                });
+                
+                return markdownParts.join('\n\n') || markdownContent;
+            };
+            
+            // Convert table HTML to markdown
+            const convertTableToMarkdown = (table) => {
+                const rows = Array.from(table.querySelectorAll('tr'));
+                if (rows.length === 0) return '';
+                
+                let markdown = [];
+                
+                rows.forEach((row, rowIndex) => {
+                    const cells = Array.from(row.querySelectorAll('th, td'));
+                    const cellTexts = cells.map(cell => cell.textContent.trim());
+                    markdown.push('| ' + cellTexts.join(' | ') + ' |');
+                    
+                    // Add separator after header row
+                    if (rowIndex === 0) {
+                        const separator = '|' + ' --- |'.repeat(cells.length);
+                        markdown.push(separator);
+                    }
+                });
+                
+                return markdown.join('\n');
+            };
+            
+            renderContent();
+            
+            // Insert table function
+            const insertTable = () => {
+                const rows = prompt('행 수를 입력하세요 (기본값: 3):', '3');
+                const cols = prompt('열 수를 입력하세요 (기본값: 3):', '3');
+                
+                if (!rows || !cols) return;
+                
+                const rowCount = parseInt(rows) || 3;
+                const colCount = parseInt(cols) || 3;
+                
+                let tableHTML = '<table><thead><tr>';
+                
+                // Header row
+                for (let i = 0; i < colCount; i++) {
+                    tableHTML += `<th>헤더 ${i + 1}</th>`;
+                }
+                tableHTML += '</tr></thead><tbody>';
+                
+                // Data rows
+                for (let i = 0; i < rowCount - 1; i++) {
+                    tableHTML += '<tr>';
+                    for (let j = 0; j < colCount; j++) {
+                        tableHTML += `<td>셀 ${i + 1}-${j + 1}</td>`;
+                    }
+                    tableHTML += '</tr>';
+                }
+                tableHTML += '</tbody></table>';
+                
+                // Insert table at cursor position
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    range.deleteContents();
+                    const tableNode = document.createElement('div');
+                    tableNode.innerHTML = tableHTML;
+                    range.insertNode(tableNode.firstChild);
+                    
+                    // Update markdown content
+                    setTimeout(() => {
+                        markdownContent = htmlToMarkdown(editor.innerHTML);
+                    }, 10);
+                }
+            };
+            
+            // Toolbar event handlers
+            toolbar.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+                
+                const cmd = button.dataset.cmd;
+                editor.focus();
+                
+                switch (cmd) {
+                    case 'bold':
+                        document.execCommand('bold', false, null);
+                        break;
+                    case 'italic':
+                        document.execCommand('italic', false, null);
+                        break;
+                    case 'strikethrough':
+                        document.execCommand('strikethrough', false, null);
+                        break;
+                    case 'h1':
+                        document.execCommand('formatBlock', false, 'h1');
+                        break;
+                    case 'h2':
+                        document.execCommand('formatBlock', false, 'h2');
+                        break;
+                    case 'h3':
+                        document.execCommand('formatBlock', false, 'h3');
+                        break;
+                    case 'ul':
+                        document.execCommand('insertUnorderedList', false, null);
+                        break;
+                    case 'ol':
+                        document.execCommand('insertOrderedList', false, null);
+                        break;
+                    case 'quote':
+                        document.execCommand('formatBlock', false, 'blockquote');
+                        break;
+                    case 'link':
+                        const url = prompt('링크 URL을 입력하세요:');
+                        if (url) document.execCommand('createLink', false, url);
+                        break;
+                    case 'table':
+                        insertTable();
+                        break;
+                    case 'code':
+                        document.execCommand('formatBlock', false, 'pre');
+                        break;
+                }
+                
+                // Update markdown content after command
+                setTimeout(() => {
+                    markdownContent = htmlToMarkdown(editor.innerHTML);
+                }, 10);
             });
-            /* make editor links open immediately */
+            
+            // Update markdown on content change
+            editor.addEventListener('input', () => {
+                markdownContent = htmlToMarkdown(editor.innerHTML);
+            });
+            
+            // Keyboard shortcuts and auto-formatting
+            editor.addEventListener('keydown', (e) => {
+                // Handle Ctrl/Cmd shortcuts
+                if (e.ctrlKey || e.metaKey) {
+                    switch (e.key) {
+                        case 'b':
+                            e.preventDefault();
+                            document.execCommand('bold', false, null);
+                            setTimeout(() => {
+                                markdownContent = htmlToMarkdown(editor.innerHTML);
+                            }, 10);
+                            break;
+                        case 'i':
+                            e.preventDefault();
+                            document.execCommand('italic', false, null);
+                            setTimeout(() => {
+                                markdownContent = htmlToMarkdown(editor.innerHTML);
+                            }, 10);
+                            break;
+                    }
+                }
+                
+                // Handle auto-formatting (Notion-style)
+                if (e.key === ' ') {
+                    const selection = window.getSelection();
+                    if (selection.rangeCount > 0) {
+                        const range = selection.getRangeAt(0);
+                        const container = range.startContainer;
+                        
+                        // Check if we're in a text node
+                        if (container.nodeType === Node.TEXT_NODE) {
+                            const text = container.textContent;
+                            const cursorPos = range.startOffset;
+                            const textBeforeCursor = text.substring(0, cursorPos);
+                            
+                            // Check for heading patterns
+                            const headingMatch = textBeforeCursor.match(/^(#{1,3})$/);
+                            if (headingMatch) {
+                                e.preventDefault();
+                                
+                                const level = headingMatch[1].length;
+                                const headingTag = `h${level}`;
+                                
+                                // Replace the # symbols with empty space and format as heading
+                                const textAfterCursor = text.substring(cursorPos);
+                                container.textContent = textAfterCursor;
+                                
+                                // Apply heading format to the current block
+                                const parentElement = container.parentElement;
+                                if (parentElement && parentElement !== editor) {
+                                    document.execCommand('formatBlock', false, headingTag);
+                                }
+                                
+                                setTimeout(() => {
+                                    markdownContent = htmlToMarkdown(editor.innerHTML);
+                                }, 10);
+                                return;
+                            }
+                        }
+                    }
+                }
+                
+                // Handle Enter key for proper line breaks
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.execCommand('insertHTML', false, '<br><br>');
+                    setTimeout(() => {
+                        markdownContent = htmlToMarkdown(editor.innerHTML);
+                    }, 10);
+                }
+            });
+            
+            // Add custom click handler for links
             setTimeout(() => {
-                // click‑to‑open for hyperlinks in both WYSIWYG & preview
-                if (!memoEditorContainer._toastui_link_listener) {
+                if (!memoEditorContainer._wysiwyg_link_listener) {
                     memoEditorContainer.addEventListener('click', e => {
                         const anchor = e.target.closest('a');
                         if (anchor) {
@@ -1952,10 +2343,19 @@
                             window.open(finalUrl, '_blank', 'noopener,noreferrer');
                         }
                     });
-                    memoEditorContainer._toastui_link_listener = true;
+                    memoEditorContainer._wysiwyg_link_listener = true;
                 }
-            }, 0);
-            return editor;
+            }, 100);
+            
+            return {
+                editor,
+                value: () => markdownContent,
+                setValue: (val) => {
+                    markdownContent = val || '';
+                    renderContent();
+                },
+                destroy: () => { container.innerHTML = ''; }
+            };
         }
 
         const connectCodeKey = 'connectClientCode';
@@ -2131,77 +2531,17 @@
         }
 
         updateThemeIcon();
-        let memoEditor = initEditor('');
-        /* ---------- 자동 하이퍼링크 ---------- */
-        // 1) 붙여넣은 텍스트가 URL 하나라면 즉시 링크로 삽입
-        memoEditorContainer.addEventListener('paste', (ev) => {
-            const text = (ev.clipboardData || window.clipboardData).getData('text').trim();
-            const urlPattern = /^https?:\/\/[^\s]+$/i;
-            if (urlPattern.test(text) && memoEditor) {
-                ev.preventDefault();
-                memoEditor.exec('link', {url: text, linkText: text});
-            }
-        });
+        let memoEditor;
 
-        // 2) 입력 도중 URL 끝에 스페이스 / 엔터 입력 시 자동 링크화
-        memoEditor.on('keydown', (ev) => {
-            if (ev.key !== ' ' && ev.key !== 'Enter') return;
-            // 0 ms 타임아웃으로 입력 확정 후 실행
-            setTimeout(() => {
-                const sel = window.getSelection();
-                if (!sel || !sel.anchorNode) return;
-                const textNode = sel.anchorNode.nodeType === 3 ? sel.anchorNode : sel.anchorNode.lastChild;
-                if (!textNode || textNode.nodeType !== 3) return;
+        // Initialize editor asynchronously
+        (async () => {
+            memoEditor = await initEditor('');
+        })();
 
-                const words = textNode.textContent.split(/\s/);
-                const last = words[words.length - 2] || '';           // 직전 단어
-                const urlPattern = /^https?:\/\/[^\s]+$/i;
-                if (urlPattern.test(last)) {
-                    memoEditor.exec('link', {url: last, linkText: last});
-                }
-            }, 0);
-        });
         let originalTitle = '';
         let originalContent = '';
-        moveToolbar();
+        // moveToolbar() - not needed for Milkdown Crepe
         updateStickyLeft();
-        // Fix Toast UI table context-menu placement so it appears at the mouse pointer
-        memoEditor.on('contextmenu', (e) => {
-            const pointerX = e.clientX;
-            const pointerY = e.clientY;
-            setTimeout(() => {
-                const menu = document.querySelector('.toastui-editor-context-menu, .toastui-editor-contextmenu');
-                if (!menu) return;
-
-                function pin() {
-                    menu.style.position = 'fixed';
-                    menu.style.transform = 'none';
-                    menu.style.margin = '0';
-
-                    const rect = menu.getBoundingClientRect();
-                    let left = pointerX + 4;
-                    let top = pointerY + 4;
-
-                    if (left + rect.width > window.innerWidth) left = window.innerWidth - rect.width - 8;
-                    if (top + rect.height > window.innerHeight) top = window.innerHeight - rect.height - 8;
-                    if (left < 8) left = 8;
-                    if (top < 8) top = 8;
-
-                    menu.style.left = `${left}px`;
-                    menu.style.top = `${top}px`;
-                }
-
-                // initial pin
-                pin();
-
-                // keep pinning if Toast UI modifies the style later
-                const observer = new MutationObserver(pin);
-                observer.observe(menu, {attributes: true, attributeFilter: ['style']});
-
-                // stop observing when the menu closes
-                menu.addEventListener('mouseleave', () => observer.disconnect(), {once: true});
-            }, 0);
-        });
 
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -2214,56 +2554,26 @@
             }
         });
 
-        applyEditorThemeClass();
-        themeToggle.addEventListener('click', () => {
+        // applyEditorThemeClass() - not needed for Milkdown Crepe
+        themeToggle.addEventListener('click', async () => {
             document.body.classList.toggle('dark-mode');
             document.body.classList.toggle('light-mode');
             const newTheme = document.body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode';
             localStorage.setItem('theme', newTheme);
             updateThemeIcon();
-            const currentContent = memoEditor.getMarkdown();
-            memoEditor.destroy();
-            memoEditor = initEditor(currentContent);
-            moveToolbar();
+            let currentContent = '';
+            try {
+                currentContent = memoEditor.value();
+            } catch (e) {
+                console.warn('Error getting markdown content:', e);
+            }
+            if (memoEditor && memoEditor.destroy) {
+                memoEditor.destroy();
+            }
+            memoEditor = await initEditor(currentContent);
+            // moveToolbar() - not needed for Milkdown Crepe
             updateStickyLeft();
             // Fix Toast UI table context-menu placement so it appears at the mouse pointer
-            memoEditor.on('contextmenu', (e) => {
-                const pointerX = e.clientX;
-                const pointerY = e.clientY;
-                setTimeout(() => {
-                    const menu = document.querySelector('.toastui-editor-context-menu, .toastui-editor-contextmenu');
-                    if (!menu) return;
-
-                    function pin() {
-                        menu.style.position = 'fixed';
-                        menu.style.transform = 'none';
-                        menu.style.margin = '0';
-
-                        const rect = menu.getBoundingClientRect();
-                        let left = pointerX + 4;
-                        let top = pointerY + 4;
-
-                        if (left + rect.width > window.innerWidth) left = window.innerWidth - rect.width - 8;
-                        if (top + rect.height > window.innerHeight) top = window.innerHeight - rect.height - 8;
-                        if (left < 8) left = 8;
-                        if (top < 8) top = 8;
-
-                        menu.style.left = `${left}px`;
-                        menu.style.top = `${top}px`;
-                    }
-
-                    // initial pin
-                    pin();
-
-                    // keep pinning if Toast UI modifies the style later
-                    const observer = new MutationObserver(pin);
-                    observer.observe(menu, {attributes: true, attributeFilter: ['style']});
-
-                    // stop observing when the menu closes
-                    menu.addEventListener('mouseleave', () => observer.disconnect(), {once: true});
-                }, 0);
-            });
-            applyEditorThemeClass();
         });
 
         const toggleSidebar = $('#toggleSidebar');
@@ -2504,16 +2814,23 @@
                 }
             });
 
-            themeSelect.addEventListener('change', e => {
+            themeSelect.addEventListener('change', async e => {
                 const val = e.target.value;
                 document.body.classList.toggle('dark-mode', val === 'dark');
                 document.body.classList.toggle('light-mode', val === 'light');
                 localStorage.setItem('theme', val === 'dark' ? 'dark-mode' : 'light-mode');
                 updateThemeIcon();
-                const currentContent = memoEditor.getMarkdown();
-                memoEditor.destroy();
-                memoEditor = initEditor(currentContent);
-                applyEditorThemeClass();
+                let currentContent = '';
+                try {
+                    currentContent = memoEditor.value();
+                } catch (e) {
+                    console.warn('Error getting markdown content:', e);
+                }
+                if (memoEditor && memoEditor.destroy) {
+                    memoEditor.destroy();
+                }
+                memoEditor = await initEditor(currentContent);
+                // applyEditorThemeClass() - not needed for Milkdown Crepe
             });
 
             resetListBtn.addEventListener('click', () => {
@@ -2719,7 +3036,7 @@
 
         setupAutoSave();
 
-        function fetchMemos(forceCode) {
+        async function fetchMemos(forceCode) {
             if (codes.length === 0) {
                 sidebarList.innerHTML = '';
                 memoDetail.classList.add('hidden');
@@ -2728,7 +3045,7 @@
             }
             fetch('/note/list?' + codes.map(c => 'codes=' + encodeURIComponent(c)).join('&'))
                 .then(res => res.json())
-                .then(data => {
+                .then(async data => {
                     const returnedCodes = data.map(m => m.code);
                     const invalidCodes = codes.filter(c => !returnedCodes.includes(c));
                     if (invalidCodes.length) {
@@ -2756,7 +3073,7 @@
 
                     if (activeCode) {
                         localStorage.setItem(activeCodeKey, activeCode);
-                        selectMemo(activeCode);
+                        await selectMemo(activeCode);
                     } else {
                         memoDetail.classList.add('hidden');
                         noMemoElem.classList.remove('hidden');
@@ -2794,10 +3111,10 @@
         `;
 
                 // 기존 이벤트(선택·옵션·드래그) 그대로 유지
-                el.addEventListener('click', e => {
+                el.addEventListener('click', async e => {
                     // 메모 선택
                     if (!e.target.closest('.note-options-btn') && !e.target.closest('.note-options-menu')) {
-                        selectMemo(m.code);
+                        await selectMemo(m.code);
                     }
                 });
 
@@ -3139,7 +3456,7 @@
             }
         }
 
-        function selectMemo(code) {
+        async function selectMemo(code) {
 
             const editStatusNote = document.getElementById('editStatusNote');
             const refreshMemoBtn = document.getElementById('refreshMemoBtn');
@@ -3161,7 +3478,7 @@
 
             if (activeCode &&
                 (memoTitle.value !== originalTitle ||
-                    memoEditor.getMarkdown() !== originalContent)) {
+                    (memoEditor && memoEditor.value ? memoEditor.value() : '') !== originalContent)) {
                 const prevCode = activeCode;
                 updateTitle();      // 제목 저장
                 updateContent();    // 내용 저장
@@ -3181,13 +3498,21 @@
                 noMemoElem.classList.add('hidden');
                 memoTitle.value = memo.title || '';
                 memoTitle.blur();
-                memoEditor.setMarkdown(memo.content || '');
-                memoEditor.blur();
+                // Update editor content
+                if (memoEditor && memoEditor.setValue) {
+                    memoEditor.setValue(memo.content || '');
+                } else {
+                    // Fallback: recreate editor if value method fails
+                    if (memoEditor && memoEditor.destroy) {
+                        memoEditor.destroy();
+                    }
+                    memoEditor = await initEditor(memo.content || '');
+                }
                 createDateElem.textContent = new Date(memo.createDate).toLocaleString();
                 updateDateElem.textContent = new Date(memo.updateDate).toLocaleString();
 
                 originalTitle = memoTitle.value || '';
-                originalContent = memoEditor.getMarkdown() || '';
+                originalContent = (memoEditor && memoEditor.value ? memoEditor.value() : '') || '';
                 renderList();
             }
             // Reset editStarted flag
@@ -3230,7 +3555,7 @@
         function updateContent() {
             if (!activeCode) return;
             const codeToSave = activeCode;
-            const content = memoEditor.getMarkdown();
+            const content = memoEditor && memoEditor.value ? memoEditor.value() : '';
 
             fetch(`/note/${codeToSave}/content`, {
                 method: 'PUT',
@@ -3255,13 +3580,13 @@
                 })
                 .catch(() => showNotification('내용 저장에 실패했습니다', 'error'));
 
-            if (activeCode === codeToSave) originalContent = memoEditor.getMarkdown();
+            if (activeCode === codeToSave) originalContent = memoEditor && memoEditor.value ? memoEditor.value() : '';
         }
 
         // ---- Edit State Detector ----
         function updateEditState() {
             const title = memoTitle.value.trim();
-            const content = memoEditor.getMarkdown();
+            const content = memoEditor && memoEditor.value ? memoEditor.value() : '';
             if (!editStarted && (title !== originalTitle || content !== originalContent)) {
                 sendNoteSocketEvent && sendNoteSocketEvent('EDIT_NOTE', activeCode);
                 editStarted = true;
@@ -3276,7 +3601,7 @@
         setInterval(() => {
             if (!memoEditor || !activeCode) return;
 
-            const currentContent = memoEditor.getMarkdown();
+            const currentContent = memoEditor && memoEditor.value ? memoEditor.value() : '';
             const currentTitle = memoTitle.value.trim();
 
             const changed = currentTitle !== originalTitle || currentContent !== originalContent;
@@ -3320,7 +3645,7 @@
                 body: JSON.stringify({clientId: clientId})
             })
                 .then(res => res.json())
-                .then(() => {
+                .then(async () => {
                     const copyBtn = $('#copyCodeBtn');
                     const originalText = copyBtn.innerHTML;
                     copyBtn.innerHTML = '<span>✓</span>';
@@ -3349,7 +3674,15 @@
                     // 화면의 기존 제목/내용이 신규 메모에 저장되지 않도록 즉시 비워준다
                     memoTitle.value = '';
                     if (memoEditor) {
-                        memoEditor.setMarkdown('');
+                        if (memoEditor.setValue) {
+                            memoEditor.setValue('');
+                        } else {
+                            // Fallback: recreate editor
+                            if (memoEditor.destroy) {
+                                memoEditor.destroy();
+                            }
+                            memoEditor = await initEditor('');
+                        }
                     }
 
                     // 새 메모를 선택하도록 fetchMemos에 전달
