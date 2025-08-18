@@ -9,4 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 class CalendarPageController {
     @GetMapping
     fun main() = "forward:/page/calendar/main.html"
+    
+    @GetMapping("/invite")
+    fun invite() = "forward:/page/calendar/invite.html"
 }

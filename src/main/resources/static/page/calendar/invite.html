@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>캘린더 초대장</title>
+</head>
+<body>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+
+        if (!code) {
+            // code 파라미터가 없으면 홈으로
+            window.location.href = '/';
+            return;
+        }
+
+        /* ---------- 기존 저장 데이터 로드 ---------- */
+        const calendarCodesKey = 'calendarCodes';
+        const calendarCodes = JSON.parse(localStorage.getItem(calendarCodesKey) || '[]');
+
+        /* ---------- 중복 체크 ---------- */
+        if (calendarCodes.includes(code)) {
+            alert('이미 추가된 캘린더입니다.');
+            window.location.href = '/page/calendar';
+            return;
+        }
+
+        /* ---------- 캘린더 정보 가져오기 ---------- */
+        try {
+            const response = await fetch(`/calendar/${code}`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                throw new Error('캘린더를 찾을 수 없습니다.');
+            }
+
+            const calendarData = await response.json();
+
+            /* ---------- 새 캘린더 코드 추가 ---------- */
+            calendarCodes.push(code);
+            localStorage.setItem(calendarCodesKey, JSON.stringify(calendarCodes));
+
+            alert(`"${calendarData.title || '캘린더'}"가 성공적으로 추가되었습니다!`);
+            window.location.href = '/page/calendar';
+
+        } catch (error) {
+            console.error('캘린더 초대 처리 실패:', error);
+            alert('캘린더 초대 처리에 실패했습니다: ' + error.message);
+            window.location.href = '/page/calendar';
+        }
+    });
+</script>
+</body>
+</html>

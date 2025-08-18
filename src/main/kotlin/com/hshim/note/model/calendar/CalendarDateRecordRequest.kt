@@ -18,7 +18,8 @@ class CalendarDateRecordRequest(
         description = description,
     )
 
-    fun updateTo(entity: CalendarDateRecord) {
+    fun updateTo(entity: CalendarDateRecord, calendar: Calendar) {
+        entity.calendar = calendar
         entity.startDateTime = startDateTime.stringToDate()
         entity.endDateTime = endDateTime.stringToDate()
         entity.title = title

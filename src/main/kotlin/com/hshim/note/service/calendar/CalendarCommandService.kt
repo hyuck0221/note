@@ -37,13 +37,6 @@ class CalendarCommandService(
             ?: throw Exception("calendar not found.")
     }
 
-    fun updateDescription(code: String, description: String?): CalendarResponse {
-        return calendarRepository.findByIdOrNull(code)
-            ?.apply { this.description = description ?: "" }
-            ?.let { CalendarResponse(it) }
-            ?: throw Exception("calendar not found.")
-    }
-
     fun initRecord(code: String, request: CalendarDateRecordRequest): CalendarDateRecordResponse {
         val entity = request.toEntity(code)
         return calendarRepository.findByIdOrNull(code)
@@ -54,10 +47,11 @@ class CalendarCommandService(
 
     fun updateRecord(code: String, id: String, request: CalendarDateRecordRequest): CalendarDateRecordResponse {
 
-        if (!calendarRepository.existsById(code)) throw Exception("calendar not found.")
+        val calendar = calendarRepository.findByIdOrNull(code)
+            ?: throw Exception("calendar not found.")
 
         return calendarDateRecordRepository.findByIdOrNull(id)
-            ?.apply { request.updateTo(this) }
+            ?.apply { request.updateTo(this, calendar) }
             ?.let { CalendarDateRecordResponse(it) }
             ?: throw Exception("calendar record not found.")
     }
