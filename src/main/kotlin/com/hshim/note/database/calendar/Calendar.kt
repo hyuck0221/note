@@ -15,6 +15,9 @@ class Calendar(
 
     @Column(nullable = true)
     var description: String?,
+
+    @Column(nullable = false)
+    var color: String,
 ) : BaseTimeEntity() {
 
     @OneToMany(mappedBy = "calendar", fetch = FetchType.LAZY, orphanRemoval = true, cascade = [CascadeType.ALL])
@@ -24,6 +27,7 @@ class Calendar(
         code = code,
         title = "제목없음",
         description = null,
+        color = "#000000",
     )
 
     companion object {
@@ -31,6 +35,7 @@ class Calendar(
             code = code,
             title = "",
             description = null,
+            color = "#000000",
         )
     }
 }

@@ -2,6 +2,7 @@ package com.hshim.note.api.calendar
 
 import com.hshim.note.model.calendar.CalendarDateRecordRequest
 import com.hshim.note.model.calendar.CalendarDateRecordResponse
+import com.hshim.note.model.calendar.CalendarRequest
 import com.hshim.note.model.calendar.CalendarResponse
 import com.hshim.note.service.calendar.CalendarCommandService
 import com.hshim.note.service.calendar.CalendarQueryService
@@ -24,20 +25,12 @@ class CalendarController(
         return calendarCommandService.init(code)
     }
 
-    @PutMapping("/{code}/title")
-    fun updateTitle(
+    @PutMapping("/{code}")
+    fun update(
         @PathVariable code: String,
-        @RequestBody request: Map<String, String?>,
+        @RequestBody request: CalendarRequest,
     ): CalendarResponse {
-        return calendarCommandService.updateTitle(code, request["title"] ?: "제목없음")
-    }
-
-    @PutMapping("/{code}/description")
-    fun updateDescription(
-        @PathVariable code: String,
-        @RequestBody request: Map<String, String?>,
-    ): CalendarResponse {
-        return calendarCommandService.updateDescription(code, request["description"])
+        return calendarCommandService.update(code, request)
     }
 
     @GetMapping("/list")
@@ -62,7 +55,7 @@ class CalendarController(
         return calendarCommandService.initRecord(code, request)
     }
 
-    @PostMapping("/{code}/record/{id}")
+    @PutMapping("/{code}/record/{id}")
     fun updateRecord(
         @PathVariable code: String,
         @PathVariable id: String,

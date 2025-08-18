@@ -71,6 +71,8 @@
             --transition-fast: 0.15s ease;
             --transition-normal: 0.2s ease;
             --transition-slow: 0.3s ease;
+
+            --event-bar-inset-x: 3px;
         }
 
         /* Dark Theme */
@@ -487,14 +489,6 @@
             overflow: auto;
         }
 
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-            background: var(--border-primary);
-            border-radius: var(--radius-md);
-            overflow: hidden;
-        }
 
         .calendar-header-cell {
             background: var(--surface-secondary);
@@ -507,11 +501,13 @@
 
         .calendar-cell {
             background: var(--surface-primary);
-            min-height: 120px;
+            min-height: 140px;
             padding: var(--spacing-sm);
             position: relative;
             cursor: pointer;
             transition: background-color var(--transition-fast);
+            overflow: visible;
+            border: 1px solid transparent;
         }
 
         .calendar-cell:hover {
@@ -543,46 +539,132 @@
         .calendar-event {
             background: var(--accent-secondary);
             color: white;
-            padding: 2px var(--spacing-xs);
-            border-radius: var(--radius-sm);
+            padding: 3px 6px;
+            border-radius: 4px;
             font-size: var(--font-xs);
+            font-weight: 500;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             cursor: pointer;
             transition: all var(--transition-fast);
-            transform: scale(1);
+            margin-bottom: 2px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
-        .calendar-event:hover {
-            transform: scale(1.02);
-            box-shadow: var(--shadow-md);
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: var(--border-primary);
+            border-radius: var(--radius-md);
+            overflow: visible;
+            position: relative;
+        }
+
+
+        .calendar-event-continuous {
+            position: absolute;
+            height: 16px;
+            padding: 1px 6px;
+            font-size: var(--font-xs);
+            font-weight: 500;
+            color: white;
+            border-radius: 3px;
+            pointer-events: all;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            z-index: 6;
+            margin: 1px 0;
+        }
+
+        .calendar-event-continuous.continuous-start {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .calendar-event-continuous.continuous-middle {
+            border-radius: 0;
+        }
+
+        .calendar-event-continuous.continuous-end {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        .calendar-event-continuous:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+            z-index: 15;
+        }
+
+        .calendar-event-single {
+            background: var(--accent-secondary);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: var(--font-xs);
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            margin-bottom: 2px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            height: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .calendar-event-single:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             z-index: 10;
             position: relative;
         }
 
-        .calendar-event-continuous {
+        /* ---------- Multi-day Event Overlay ---------- */
+        .event-overlay {
             position: absolute;
-            top: calc(var(--spacing-sm) + 20px);
+            inset: 0;
+            pointer-events: none; /* allow clicks to pass through except on bars */
+            z-index: 12; /* above cell content */
+        }
+
+        .calendar-event-bar {
+            position: absolute;
             height: 16px;
-            z-index: 5;
-            border-radius: 0;
-            margin: 1px 0;
+            padding: 1px 6px;
+            font-size: var(--font-xs);
+            font-weight: 500;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            pointer-events: all; /* bar itself is interactive */
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            transition: all var(--transition-fast);
         }
 
-        .calendar-event-continuous.start {
-            border-top-left-radius: var(--radius-sm);
-            border-bottom-left-radius: var(--radius-sm);
+        .calendar-event-bar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 20;
+            height: 18px;
         }
 
-        .calendar-event-continuous.end {
-            border-top-right-radius: var(--radius-sm);
-            border-bottom-right-radius: var(--radius-sm);
-        }
-        
-        .calendar-event-continuous.single {
-            border-radius: var(--radius-sm);
-        }
+        .calendar-event-bar.continuous-start { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        .calendar-event-bar.continuous-middle { border-radius: 0; }
+        .calendar-event-bar.continuous-end { border-top-left-radius: 0; border-bottom-left-radius: 0; }
 
         /* ---------- Modal ---------- */
         .modal {
@@ -853,7 +935,7 @@
             .sidebar.collapsed {
                 transform: translateX(-100%);
             }
-            
+
             .main-content.sidebar-collapsed .content {
                 margin-left: -300px;
             }
@@ -947,7 +1029,7 @@
                             <div class="calendar-header-cell">목</div>
                             <div class="calendar-header-cell">금</div>
                             <div class="calendar-header-cell">토</div>
-                            
+
                             <!-- Calendar cells will be populated here -->
                         </div>
                     </div>
@@ -1093,7 +1175,7 @@
         const baseUrl = '';
         const $ = (selector) => document.querySelector(selector);
         const $$ = (selector) => document.querySelectorAll(selector);
-        
+
         let currentDate = new Date();
         let calendars = [];
         let dateRecords = [];
@@ -1102,6 +1184,7 @@
         let editingEvent = null;
         let selectedYear = currentDate.getFullYear();
         let selectedMonth = currentDate.getMonth();
+        let editingCalendarCodeForCategory = null;
         let draggedEvent = null;
         let dragStartDate = null;
 
@@ -1119,7 +1202,7 @@
             const savedTheme = localStorage.getItem('theme');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const isDark = savedTheme === 'dark-mode' || (!savedTheme && prefersDark);
-            
+
             document.body.classList.toggle('dark-mode', isDark);
             $('#themeIcon').textContent = isDark ? '☀️' : '🌙';
         }
@@ -1142,15 +1225,10 @@
             localStorage.setItem('calendarCodes', JSON.stringify([...selectedCalendars]));
         }
 
-        function getCalendarColor(code) {
-            const colorData = JSON.parse(localStorage.getItem('calendarColors') || '{}');
-            return colorData[code] || '#6366F1';
-        }
 
-        function setCalendarColor(code, color) {
-            const colorData = JSON.parse(localStorage.getItem('calendarColors') || '{}');
-            colorData[code] = color;
-            localStorage.setItem('calendarColors', JSON.stringify(colorData));
+        function resolveCalendarColorByCode(code) {
+            const cal = calendars.find(c => c.code === code);
+            return (cal && cal.color) ? cal.color : '#6366F1';
         }
 
         // API calls
@@ -1161,19 +1239,19 @@
                 // Load calendar information
                 const calendarResponse = await fetch(`/calendar/list?codes=${[...selectedCalendars].join(',')}`);
                 calendars = await calendarResponse.json();
-                
+
                 // 캘린더 visibility 상태 로드
                 const visibilityData = JSON.parse(localStorage.getItem('calendarVisibility') || '{}');
                 calendars.forEach(calendar => {
                     calendar.visible = visibilityData[calendar.code] !== false; // 기본값은 true
                 });
-                
+
                 // Load date records for current month +- 1
                 const startMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
                 const endMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0);
-                
+
                 await loadDateRecords(formatYearMonth(startMonth), formatYearMonth(endMonth));
-                
+
                 renderCategories();
                 renderCalendar();
             } catch (error) {
@@ -1188,12 +1266,12 @@
             try {
                 const response = await fetch(`/calendar/search?codes=${[...selectedCalendars].join(',')}&startYearMonth=${startYearMonth}&endYearMonth=${endYearMonth}`);
                 const newRecords = await response.json();
-                
+
                 // Merge new records with existing ones
                 const existingIds = new Set(dateRecords.map(r => r.id));
                 const uniqueNewRecords = newRecords.filter(r => !existingIds.has(r.id));
                 dateRecords = [...dateRecords, ...uniqueNewRecords];
-                
+
                 // Cache the loaded months
                 const start = new Date(startYearMonth + '-01');
                 const end = new Date(endYearMonth + '-01');
@@ -1211,29 +1289,21 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
-                
+
                 if (!response.ok) throw new Error('Failed to create calendar');
-                
+
                 const calendar = await response.json();
-                
-                if (title !== calendar.title) {
-                    await updateCalendarTitle(calendar.code, title);
-                    calendar.title = title;
-                }
-                
-                if (description) {
-                    await updateCalendarDescription(calendar.code, description);
-                    calendar.description = description;
-                }
-                
-                // 색상 저장
-                setCalendarColor(calendar.code, color);
-                
+
+                await updateCalendar(calendar.code, { title, description: description || null, color });
+                calendar.title = title;
+                calendar.description = description || null;
+                calendar.color = color;
+
                 calendars.push(calendar);
                 selectedCalendars.add(calendar.code);
                 saveCalendarsToStorage();
                 renderCategories();
-                
+
                 return calendar;
             } catch (error) {
                 console.error('Failed to create calendar:', error);
@@ -1247,28 +1317,28 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
-                
+
                 if (!response.ok) {
                     if (response.status === 404) {
                         throw new Error('캘린더를 찾을 수 없습니다');
                     }
                     throw new Error('캘린더 추가에 실패했습니다');
                 }
-                
+
                 const calendar = await response.json();
-                
+
                 // 이미 추가된 캘린더인지 확인
                 if (selectedCalendars.has(code)) {
                     showNotification('이미 추가된 캘린더입니다', 'info');
                     return;
                 }
-                
+
                 calendars.push(calendar);
                 selectedCalendars.add(calendar.code);
                 saveCalendarsToStorage();
                 renderCategories();
                 loadCalendarData();
-                
+
                 showNotification('캘린더가 추가되었습니다', 'success');
                 return calendar;
             } catch (error) {
@@ -1278,21 +1348,13 @@
             }
         }
 
-        async function updateCalendarTitle(code, title) {
-            const response = await fetch(`/calendar/${code}/title`, {
+        async function updateCalendar(code, payload) {
+            const response = await fetch(`/calendar/${code}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title })
+                body: JSON.stringify(payload)
             });
-            return response.json();
-        }
-
-        async function updateCalendarDescription(code, description) {
-            const response = await fetch(`/calendar/${code}/description`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description })
-            });
+            if (!response.ok) throw new Error('Failed to update calendar');
             return response.json();
         }
 
@@ -1300,18 +1362,17 @@
         function renderCalendar() {
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
-            
+
             $('#calendarTitle').textContent = `${year}년 ${month + 1}월`;
-            
+
             const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
             const startDate = new Date(firstDay);
             startDate.setDate(startDate.getDate() - firstDay.getDay());
-            
+
             const grid = $('#calendarGrid');
             const existingCells = grid.querySelectorAll('.calendar-cell');
             existingCells.forEach(cell => cell.remove());
-            
+
             // 캘린더 날짜 배열 생성
             const calendarDates = [];
             for (let i = 0; i < 42; i++) {
@@ -1319,73 +1380,514 @@
                 cellDate.setDate(startDate.getDate() + i);
                 calendarDates.push(cellDate);
             }
-            
-            // 기본 셀 생성
-            const cells = calendarDates.map(date => createCalendarCell(date, month));
+
+            // 통합 일정 레이아웃 계산
+            const eventLayout = calculateEventLayout(calendarDates);
+
+            // 기본 셀 생성 및 일정 렌더링
+            const cells = calendarDates.map((date, index) => createCalendarCellWithEvents(date, month, index, eventLayout));
             cells.forEach(cell => grid.appendChild(cell));
-            
-            // 연속 일정 렌더링
-            renderContinuousEvents(calendarDates, cells);
+            // Draw multi-day event overlay bars
+            drawContinuousEventBars(calendarDates, eventLayout, cells);
         }
 
-        function createCalendarCell(date, currentMonth) {
+        function calculateEventLayout(calendarDates) {
+            const allEvents = [];
+            const eventLayout = new Map(); // dateIndex -> events array
+
+            // 모든 일정을 수집하고 분류
+            calendarDates.forEach((date, dateIndex) => {
+                const singleDayEvents = getSingleDayRecordsForDate(date);
+                const multiDayEvents = getMultiDayRecordsForDate(date, calendarDates);
+
+                const dayEvents = [];
+
+                // 단일 일정 추가
+                singleDayEvents.forEach(record => {
+                    dayEvents.push({
+                        type: 'single',
+                        record: record,
+                        startIndex: dateIndex,
+                        endIndex: dateIndex
+                    });
+                });
+
+                // 연속 일정 추가 (해당 날짜가 시작점인 경우만)
+                multiDayEvents.forEach(eventInfo => {
+                    if (eventInfo.startIndex === dateIndex) {
+                        dayEvents.push({
+                            type: 'continuous',
+                            record: eventInfo.record,
+                            startIndex: eventInfo.startIndex,
+                            endIndex: eventInfo.endIndex
+                        });
+                    }
+                });
+
+                eventLayout.set(dateIndex, dayEvents);
+            });
+
+            // 각 날짜별로 일정 행 배치 계산
+            const occupiedRows = new Map(); // dateIndex -> Set of row numbers
+
+            calendarDates.forEach((date, dateIndex) => {
+                occupiedRows.set(dateIndex, new Set());
+            });
+
+            // 연속 일정 먼저 배치 (더 넓은 범위를 차지하므로)
+            for (let [dateIndex, events] of eventLayout.entries()) {
+                events.filter(e => e.type === 'continuous').forEach(event => {
+                    const row = findAvailableRowRange(occupiedRows, event.startIndex, event.endIndex);
+                    event.row = row;
+
+                    // 해당 범위의 모든 날짜에 행 점유 표시
+                    for (let i = event.startIndex; i <= event.endIndex; i++) {
+                        occupiedRows.get(i).add(row);
+                    }
+                });
+            }
+
+            // 단일 일정 배치
+            for (let [dateIndex, events] of eventLayout.entries()) {
+                events.filter(e => e.type === 'single').forEach(event => {
+                    const row = findAvailableRowRange(occupiedRows, event.startIndex, event.endIndex);
+                    event.row = row;
+                    occupiedRows.get(dateIndex).add(row);
+                });
+            }
+
+            return eventLayout;
+        }
+
+        function getMultiDayRecordsForDate(date, calendarDates) {
+            const multiDayRecords = getMultiDayRecords();
+            const result = [];
+
+            multiDayRecords.forEach(record => {
+                const startDateTime = new Date(record.startDateTime);
+                const endDateTime = new Date(record.endDateTime);
+
+                const startDate = new Date(startDateTime.getFullYear(), startDateTime.getMonth(), startDateTime.getDate());
+                const endDate = new Date(endDateTime.getFullYear(), endDateTime.getMonth(), endDateTime.getDate());
+
+                // 현재 날짜가 일정 범위에 포함되는지 확인
+                const currentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+                if (currentDate >= startDate && currentDate <= endDate) {
+                    const startIndex = calendarDates.findIndex(d => d.toDateString() === startDate.toDateString());
+                    const endIndex = calendarDates.findIndex(d => d.toDateString() === endDate.toDateString());
+
+                    if (startIndex !== -1 && endIndex !== -1) {
+                        result.push({
+                            record: record,
+                            startIndex: startIndex,
+                            endIndex: endIndex
+                        });
+                    }
+                }
+            });
+
+            return result;
+        }
+
+        function findAvailableRowRange(occupiedRows, startIndex, endIndex) {
+            let row = 0;
+            while (true) {
+                let canUseRow = true;
+                for (let i = startIndex; i <= endIndex; i++) {
+                    if (occupiedRows.get(i).has(row)) {
+                        canUseRow = false;
+                        break;
+                    }
+                }
+                if (canUseRow) return row;
+                row++;
+            }
+        }
+
+        function createCalendarCellWithEvents(date, currentMonth, dateIndex, eventLayout) {
             const cell = document.createElement('div');
             cell.className = 'calendar-cell';
-            
+
             const isOtherMonth = date.getMonth() !== currentMonth;
             const isToday = isDateToday(date);
-            
+
             if (isOtherMonth) cell.classList.add('other-month');
             if (isToday) cell.classList.add('today');
-            
+
             const dayElement = document.createElement('div');
             dayElement.className = 'calendar-day';
             dayElement.textContent = date.getDate();
             cell.appendChild(dayElement);
-            
+
+            // 일정 컨테이너
             const eventsElement = document.createElement('div');
             eventsElement.className = 'calendar-events';
-            
+            eventsElement.style.position = 'relative';
+
+            // 이벤트 레이아웃에서 해당 날짜의 일정들 가져오기
+            const dayEvents = eventLayout.get(dateIndex) || [];
+
+            dayEvents.forEach(eventInfo => {
+                if (eventInfo.type === 'single') {
+                    // 단일 일정 렌더링
+                    const eventElement = createSingleEventElement(eventInfo.record, eventInfo.row, date);
+                    eventsElement.appendChild(eventElement);
+                } else if (eventInfo.type === 'continuous') {
+                    // 연속 일정은 오버레이 레이어에서 일괄 렌더링
+                }
+            });
+
+            cell.appendChild(eventsElement);
+
+            cell.addEventListener('click', () => {
+                openEventModal(date);
+            });
+
+            // 드랍 이벤트
+            setupCellDropEvents(cell, date);
+
+            return cell;
+        }
+
+        function createSingleEventElement(record, row, date) {
+            const eventElement = document.createElement('div');
+            eventElement.className = 'calendar-event-single';
+            eventElement.textContent = record.title;
+            eventElement.draggable = true;
+
+            // 위치 설정
+            const rowHeight = 18;
+            const topOffset = 26;
+            eventElement.style.position = 'absolute';
+            eventElement.style.top = (topOffset + row * rowHeight) + 'px';
+            eventElement.style.left = '0';
+            eventElement.style.right = '0';
+
+            // 캘린더 색상 적용
+            const calendarColor = (record.calendar && record.calendar.color) ? record.calendar.color : resolveCalendarColorByCode(record.calendar.code);
+            eventElement.style.backgroundColor = calendarColor;
+
+            // 이벤트 리스너
+            eventElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                editEvent(record);
+            });
+
+            eventElement.addEventListener('dragstart', (e) => {
+                draggedEvent = record;
+                dragStartDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                e.dataTransfer.effectAllowed = 'move';
+                eventElement.style.opacity = '0.5';
+            });
+
+            eventElement.addEventListener('dragend', (e) => {
+                eventElement.style.opacity = '1';
+                draggedEvent = null;
+                dragStartDate = null;
+            });
+
+            return eventElement;
+        }
+
+        // function renderPassingContinuousEvents is now unused
+
+        function createContinuousEventSegment(eventInfo, currentIndex, startIndex, endIndex) {
+            const eventElement = document.createElement('div');
+            eventElement.className = 'calendar-event-continuous';
+
+            // 위치 설정
+            const rowHeight = 18;
+            const topOffset = 26;
+            eventElement.style.position = 'absolute';
+            eventElement.style.top = (topOffset + eventInfo.row * rowHeight) + 'px';
+            eventElement.style.left = '-1px'; // 셀 경계를 살짝 넘어서 연결되게
+            eventElement.style.right = '-1px';
+
+            // 캘린더 색상 적용
+            const calendarColor = getCalendarColor(eventInfo.record.calendar.code);
+            eventElement.style.backgroundColor = calendarColor;
+
+            // 텍스트는 시작 부분에만 표시
+            if (currentIndex === startIndex) {
+                eventElement.textContent = eventInfo.record.title;
+                eventElement.classList.add('continuous-start');
+            } else if (currentIndex === endIndex) {
+                eventElement.classList.add('continuous-end');
+            } else {
+                eventElement.classList.add('continuous-middle');
+            }
+
+            // 주 경계 처리
+            const currentCol = currentIndex % 7;
+            const nextCol = (currentIndex + 1) % 7;
+
+            if (currentIndex < endIndex && nextCol === 0) {
+                // 주의 마지막 날이지만 일정이 계속되는 경우
+                eventElement.style.right = '-1px';
+            }
+
+            if (currentIndex > startIndex && currentCol === 0) {
+                // 주의 첫 번째 날이지만 일정의 시작이 아닌 경우
+                eventElement.style.left = '-1px';
+            }
+
+            // 이벤트 리스너
+            eventElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                editEvent(eventInfo.record);
+            });
+
+            eventElement.draggable = true;
+            eventElement.addEventListener('dragstart', (e) => {
+                draggedEvent = eventInfo.record;
+                dragStartDate = new Date(); // 현재 셀의 날짜로 설정 필요
+                e.dataTransfer.effectAllowed = 'move';
+                eventElement.style.opacity = '0.5';
+            });
+
+            eventElement.addEventListener('dragend', (e) => {
+                eventElement.style.opacity = '1';
+                draggedEvent = null;
+                dragStartDate = null;
+            });
+
+            return eventElement;
+        }
+
+        // function renderContinuousEventElements is now no-op
+        function renderContinuousEventElements(eventInfo, eventLayout, date) {
+            // 연속 일정은 오버레이 레이어에서 일괄 렌더링
+        }
+
+        function setupCellDropEvents(cell, date) {
+            cell.addEventListener('dragover', (e) => {
+                if (draggedEvent) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    cell.style.backgroundColor = 'var(--accent-secondary)';
+                    cell.style.opacity = '0.8';
+                }
+            });
+
+            cell.addEventListener('dragleave', (e) => {
+                if (draggedEvent) {
+                    cell.style.backgroundColor = '';
+                    cell.style.opacity = '';
+                }
+            });
+
+            cell.addEventListener('drop', async (e) => {
+                if (draggedEvent) {
+                    e.preventDefault();
+                    cell.style.backgroundColor = '';
+                    cell.style.opacity = '';
+
+                    // Normalize dates to local midnight to prevent timezone/HH:mm offset issues
+                    const dropDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    const startDateNorm = new Date(dragStartDate.getFullYear(), dragStartDate.getMonth(), dragStartDate.getDate());
+                    const daysDiff = Math.round((dropDate - startDateNorm) / 86400000);
+
+                    if (daysDiff !== 0) {
+                        await moveEvent(draggedEvent, daysDiff);
+                    }
+                }
+            });
+        }
+
+        // Overlay rendering for continuous (multi-day) events
+        function drawContinuousEventBars(calendarDates, eventLayout, cells) {
+            const grid = document.getElementById('calendarGrid');
+
+            // 기존 오버레이 제거 후 새로 생성
+            const prev = grid.querySelector('.event-overlay');
+            if (prev) prev.remove();
+            const overlay = document.createElement('div');
+            overlay.className = 'event-overlay';
+            grid.appendChild(overlay);
+
+            const gridRect = grid.getBoundingClientRect();
+            const gap = parseFloat(getComputedStyle(grid).gap) || 0;
+            const insetX = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--event-bar-inset-x')) || 3;
+
+            const cellRectRel = (i) => {
+                const el = cells[i];
+                const r = el.getBoundingClientRect();
+                return {
+                    left: r.left - gridRect.left,
+                    right: r.right - gridRect.left,
+                    top: r.top - gridRect.top,
+                    width: r.width,
+                    height: r.height
+                };
+            };
+
+            const rowHeight = 20;  // 레인 높이
+            const topOffset  = 32; // 셀 상단에서 살짝 내려서 시작
+
+            const rendered = new Set();
+            for (let [, events] of eventLayout.entries()) {
+                for (const e of events) {
+                    if (e.type !== 'continuous') continue;
+                    const id = e.record.id;
+                    if (rendered.has(id)) continue;
+                    rendered.add(id);
+
+                    // 현재 그리드(월 뷰)의 인덱스 범위로 클램핑
+                    const gridStart   = 0;
+                    const gridEnd     = cells.length - 1;
+                    if (e.endIndex < gridStart || e.startIndex > gridEnd) continue;
+                    const visibleStart = Math.max(e.startIndex, gridStart);
+                    const visibleEnd   = Math.min(e.endIndex,   gridEnd);
+
+                    let segStart = visibleStart;
+                    while (segStart <= visibleEnd) {
+                        const weekStart = Math.floor(segStart / 7) * 7;
+                        const weekEnd   = Math.min(weekStart + 6, visibleEnd);
+                        const segEnd    = Math.min(weekEnd, visibleEnd);
+
+                        const startRect = cellRectRel(segStart);
+                        const endRect   = cellRectRel(segEnd);
+
+                        const bar = document.createElement('div');
+                        bar.className = 'calendar-event-bar';
+
+                        // 첫 번째 가시 세그먼트에서만 타이틀 표시(이전 달에서 넘어온 경우 포함)
+                        if (segStart === visibleStart) {
+                            bar.textContent = e.record.title;
+                        }
+
+                        bar.style.backgroundColor = (e.record.calendar && e.record.calendar.color) ? e.record.calendar.color : resolveCalendarColorByCode(e.record.calendar.code);
+
+                        // 수직 위치(레인) 배치
+                        bar.style.top = (startRect.top + topOffset + e.row * rowHeight) + 'px';
+
+                        // 좌우 인셋 적용해서 셀 경계에 들러붙지 않게
+                        const left  = startRect.left + insetX;
+                        const right = endRect.right  - insetX;
+                        bar.style.left  = left + 'px';
+                        bar.style.width = Math.max(8, right - left) + 'px';
+
+                        // 모서리 라운딩은 "실제 이벤트 경계" 기준
+                        const isTrueStart = segStart === e.startIndex;
+                        const isTrueEnd   = segEnd   === e.endIndex;
+                        if (isTrueStart && isTrueEnd) {
+                            // 한 주 안에 통째로 들어온 경우 양 끝 둥글게
+                        } else if (isTrueStart) {
+                            bar.classList.add('continuous-start');
+                        } else if (isTrueEnd) {
+                            bar.classList.add('continuous-end');
+                        } else {
+                            bar.classList.add('continuous-middle');
+                        }
+
+                        // 상호작용
+                        bar.addEventListener('click', (ev) => {
+                            ev.stopPropagation();
+                            editEvent(e.record);
+                        });
+
+                        // 드래그 시작점은 현재 마우스 위치 열 기반으로 추정
+                        bar.draggable = true;
+                        bar.addEventListener('dragstart', (ev) => {
+                            draggedEvent = e.record;
+
+                            const gridRect2 = grid.getBoundingClientRect();
+                            const exampleRect = cellRectRel(segStart);
+
+                            // Read both column and row gaps for accurate hit testing
+                            const styles = getComputedStyle(grid);
+                            const gapX = parseFloat(styles.columnGap || styles.gap) || 0;
+                            const gapY = parseFloat(styles.rowGap || styles.gap) || 0;
+
+                            const cellW = exampleRect.width + gapX;
+                            const cellH = exampleRect.height + gapY;
+
+                            const relX = ev.clientX - gridRect2.left;
+                            const relY = ev.clientY - gridRect2.top;
+
+                            const col = Math.max(0, Math.min(6, Math.floor(relX / cellW)));
+                            const maxRow = Math.floor((cells.length - 1) / 7);
+                            const row = Math.max(0, Math.min(maxRow, Math.floor(relY / cellH)));
+
+                            const idx = row * 7 + col;
+                            const d = calendarDates[idx];
+
+                            dragStartDate = new Date(d.getFullYear(), d.getMonth(), d.getDate()); // 자정 정규화
+                            bar.style.opacity = '0.5';
+                            ev.dataTransfer.effectAllowed = 'move';
+                        });
+                        bar.addEventListener('dragend', () => {
+                            bar.style.opacity = '1';
+                            draggedEvent = null;
+                            dragStartDate = null;
+                        });
+
+                        overlay.appendChild(bar);
+
+                        segStart = segEnd + 1; // 다음 주 세그먼트
+                    }
+                }
+            }
+        }
+        function createCalendarCell(date, currentMonth) {
+            const cell = document.createElement('div');
+            cell.className = 'calendar-cell';
+
+            const isOtherMonth = date.getMonth() !== currentMonth;
+            const isToday = isDateToday(date);
+
+            if (isOtherMonth) cell.classList.add('other-month');
+            if (isToday) cell.classList.add('today');
+
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day';
+            dayElement.textContent = date.getDate();
+            cell.appendChild(dayElement);
+
+            const eventsElement = document.createElement('div');
+            eventsElement.className = 'calendar-events';
+
             // 단일 일정만 표시 (하루짜리 일정)
             const dayRecords = getSingleDayRecordsForDate(date);
             dayRecords.forEach(record => {
                 const eventElement = document.createElement('div');
-                eventElement.className = 'calendar-event';
+                eventElement.className = 'calendar-event-single';
                 eventElement.textContent = record.title;
                 eventElement.draggable = true;
-                
+
                 // 캘린더 색상 적용
-                const calendarColor = getCalendarColor(record.calendar.code);
+                const calendarColor = (record.calendar && record.calendar.color) ? record.calendar.color : resolveCalendarColorByCode(record.calendar.code);
                 eventElement.style.backgroundColor = calendarColor;
-                
+
                 eventElement.addEventListener('click', (e) => {
                     e.stopPropagation();
                     editEvent(record);
                 });
-                
+
                 // 드래그 이벤트
                 eventElement.addEventListener('dragstart', (e) => {
                     draggedEvent = record;
-                    dragStartDate = new Date(date);
+                    dragStartDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                     e.dataTransfer.effectAllowed = 'move';
                     eventElement.style.opacity = '0.5';
                 });
-                
+
                 eventElement.addEventListener('dragend', (e) => {
                     eventElement.style.opacity = '1';
                     draggedEvent = null;
                     dragStartDate = null;
                 });
-                
+
                 eventsElement.appendChild(eventElement);
             });
-            
+
             cell.appendChild(eventsElement);
-            
+
             cell.addEventListener('click', () => {
                 openEventModal(date);
             });
-            
+
             // 드랍 이벤트
             cell.addEventListener('dragover', (e) => {
                 if (draggedEvent) {
@@ -1395,48 +1897,49 @@
                     cell.style.opacity = '0.8';
                 }
             });
-            
+
             cell.addEventListener('dragleave', (e) => {
                 if (draggedEvent) {
                     cell.style.backgroundColor = '';
                     cell.style.opacity = '';
                 }
             });
-            
+
             cell.addEventListener('drop', async (e) => {
                 if (draggedEvent) {
                     e.preventDefault();
                     cell.style.backgroundColor = '';
                     cell.style.opacity = '';
-                    
-                    const dropDate = new Date(date);
-                    const daysDiff = Math.round((dropDate - dragStartDate) / (1000 * 60 * 60 * 24));
-                    
+
+                    const dropDate     = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    const startDateNow = new Date(dragStartDate.getFullYear(), dragStartDate.getMonth(), dragStartDate.getDate());
+                    const daysDiff     = Math.round((dropDate - startDateNow) / 86400000);
+
                     if (daysDiff !== 0) {
                         await moveEvent(draggedEvent, daysDiff);
                     }
                 }
             });
-            
+
             return cell;
         }
 
         function renderCategories() {
             const list = $('#categoryList');
             list.innerHTML = '';
-            
+
             calendars.forEach(calendar => {
                 const item = document.createElement('div');
                 item.className = 'category-item';
                 if (calendar.visible !== false) {
                     item.classList.add('active');
                 }
-                
+
                 const eyeIcon = calendar.visible !== false ? '👁️' : '🙈';
-                const calendarColor = getCalendarColor(calendar.code);
-                
+                const calendarColor = calendar.color || '#6366F1';
+
                 const description = calendar.description ? `<div class="category-description">${calendar.description}</div>` : '';
-                
+
                 item.innerHTML = `
                     <div class="category-info">
                         <div class="category-color" style="background: ${calendarColor};"></div>
@@ -1451,26 +1954,25 @@
                             <button class="category-action" data-action="more" data-code="${calendar.code}">⋯</button>
                             <div class="category-more-dropdown" id="more-${calendar.code}">
                                 <button class="category-more-item" data-action="invite" data-code="${calendar.code}">초대</button>
-                                <button class="category-more-item" data-action="edit-title" data-code="${calendar.code}">제목 수정</button>
-                                <button class="category-more-item" data-action="edit" data-code="${calendar.code}">설명 수정</button>
+                                <button class="category-more-item" data-action="edit-calendar" data-code="${calendar.code}">수정</button>
                                 <button class="category-more-item" data-action="delete" data-code="${calendar.code}">삭제</button>
                             </div>
                         </div>
                     </div>
                 `;
-                
+
                 list.appendChild(item);
             });
-            
+
             // Remove existing event listeners and add new ones
             const newList = list.cloneNode(true);
             list.parentNode.replaceChild(newList, list);
-            
+
             // Add event listeners for category actions
             newList.addEventListener('click', (e) => {
                 const action = e.target.dataset.action;
                 const code = e.target.dataset.code;
-                
+
                 if (action === 'hide') {
                     toggleCalendarVisibility(code);
                 } else if (action === 'more') {
@@ -1488,34 +1990,19 @@
                     // TODO: 초대 기능 구현
                     showNotification('초대 기능은 추후 구현 예정입니다', 'info');
                     document.getElementById(`more-${code}`).classList.remove('show');
-                } else if (action === 'edit-title') {
+                } else if (action === 'edit-calendar') {
                     const calendar = calendars.find(cal => cal.code === code);
                     if (calendar) {
-                        const newTitle = prompt('캘린더 제목을 입력하세요', calendar.title || '');
-                        if (newTitle !== null && newTitle.trim()) {
-                            updateCalendarTitle(code, newTitle.trim())
-                                .then(() => {
-                                    calendar.title = newTitle.trim();
-                                    renderCategories();
-                                    showNotification('제목이 업데이트되었습니다', 'success');
-                                })
-                                .catch(() => showNotification('제목 수정 실패', 'error'));
-                        }
-                    }
-                    document.getElementById(`more-${code}`).classList.remove('show');
-                } else if (action === 'edit') {
-                    const calendar = calendars.find(cal => cal.code === code);
-                    if (calendar) {
-                        const newDesc = prompt('캘린더 설명을 입력하세요', calendar.description || '');
-                        if (newDesc !== null) {
-                            updateCalendarDescription(code, newDesc.trim())
-                                .then(() => {
-                                    calendar.description = newDesc.trim();
-                                    renderCategories();
-                                    showNotification('설명이 업데이트되었습니다', 'success');
-                                })
-                                .catch(() => showNotification('설명 수정 실패', 'error'));
-                        }
+                        editingCalendarCodeForCategory = code;
+                        document.getElementById('categoryModalTitle').textContent = '카테고리 수정';
+                        document.getElementById('categoryTitleInput').value = calendar.title || '';
+                        document.getElementById('categoryDescInput').value = calendar.description || '';
+                        const currentColor = calendar.color || '#6366F1';
+                        document.getElementById('categoryColorInput').value = currentColor;
+                        document.querySelectorAll('.color-preset').forEach(p => {
+                            p.classList.toggle('active', p.dataset.color && p.dataset.color.toLowerCase() === currentColor.toLowerCase());
+                        });
+                        document.getElementById('categoryModal').classList.add('show');
                     }
                     document.getElementById(`more-${code}`).classList.remove('show');
                 } else if (action === 'delete') {
@@ -1540,19 +2027,19 @@
             return dateRecords.filter(record => {
                 const startDateTime = new Date(record.startDateTime);
                 const endDateTime = new Date(record.endDateTime);
-                
+
                 // 날짜만 추출 (시간 제거)
                 const startDate = new Date(startDateTime.getFullYear(), startDateTime.getMonth(), startDateTime.getDate());
                 const endDate = new Date(endDateTime.getFullYear(), endDateTime.getMonth(), endDateTime.getDate());
                 const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-                
+
                 // 날짜 범위 체크 (시작일과 종료일 모두 포함)
                 const inDateRange = checkDate >= startDate && checkDate <= endDate;
-                
+
                 // 캘린더 visibility 체크
                 const calendar = calendars.find(cal => cal.code === record.calendar.code);
                 const isVisible = calendar ? calendar.visible !== false : true;
-                
+
                 return inDateRange && isVisible;
             });
         }
@@ -1561,11 +2048,11 @@
             return getRecordsForDate(date).filter(record => {
                 const startDateTime = new Date(record.startDateTime);
                 const endDateTime = new Date(record.endDateTime);
-                
-                // 날짜만 추출 (시간 제거)  
+
+                // 날짜만 추출 (시간 제거)
                 const startDate = new Date(startDateTime.getFullYear(), startDateTime.getMonth(), startDateTime.getDate());
                 const endDate = new Date(endDateTime.getFullYear(), endDateTime.getMonth(), endDateTime.getDate());
-                
+
                 // 시작일과 종료일이 같은 날인 경우만 (단일 일정)
                 return startDate.getTime() === endDate.getTime();
             });
@@ -1575,171 +2062,37 @@
             return dateRecords.filter(record => {
                 const startDateTime = new Date(record.startDateTime);
                 const endDateTime = new Date(record.endDateTime);
-                
+
                 // 날짜만 추출 (시간 제거)
                 const startDate = new Date(startDateTime.getFullYear(), startDateTime.getMonth(), startDateTime.getDate());
                 const endDate = new Date(endDateTime.getFullYear(), endDateTime.getMonth(), endDateTime.getDate());
-                
+
                 // 시작일과 종료일이 다른 경우만 (연속 일정)
                 const isMultiDay = startDate.getTime() !== endDate.getTime();
-                
+
                 // 캘린더 visibility 체크
                 const calendar = calendars.find(cal => cal.code === record.calendar.code);
                 const isVisible = calendar ? calendar.visible !== false : true;
-                
+
                 return isMultiDay && isVisible;
             });
         }
 
-        function renderContinuousEvents(calendarDates, cells) {
-            const multiDayRecords = getMultiDayRecords();
-            const usedRows = new Map(); // 각 날짜별로 사용된 행 추적
-            
-            multiDayRecords.forEach(record => {
-                const startDateTime = new Date(record.startDateTime);
-                const endDateTime = new Date(record.endDateTime);
-                
-                const startDate = new Date(startDateTime.getFullYear(), startDateTime.getMonth(), startDateTime.getDate());
-                const endDate = new Date(endDateTime.getFullYear(), endDateTime.getMonth(), endDateTime.getDate());
-                
-                // 캘린더에 표시되는 날짜 범위에서 일정이 겹치는 부분 찾기
-                const firstCalendarDate = calendarDates[0];
-                const lastCalendarDate = calendarDates[calendarDates.length - 1];
-                
-                let currentDate = new Date(Math.max(startDate.getTime(), firstCalendarDate.getTime()));
-                const eventEndDate = new Date(Math.min(endDate.getTime(), lastCalendarDate.getTime()));
-                
-                if (currentDate > eventEndDate) return;
-                
-                // 주 단위로 일정을 나누어 렌더링
-                while (currentDate <= eventEndDate) {
-                    const weekStart = getWeekStart(currentDate, calendarDates);
-                    const weekEnd = getWeekEnd(currentDate, calendarDates);
-                    
-                    const segmentStart = new Date(Math.max(currentDate.getTime(), weekStart.getTime()));
-                    const segmentEnd = new Date(Math.min(eventEndDate.getTime(), weekEnd.getTime()));
-                    
-                    if (segmentStart <= segmentEnd) {
-                        renderEventSegment(record, segmentStart, segmentEnd, calendarDates, cells, usedRows);
-                    }
-                    
-                    // 다음 주로 이동
-                    currentDate = new Date(weekEnd);
-                    currentDate.setDate(currentDate.getDate() + 1);
-                }
-            });
-        }
-
-        function getWeekStart(date, calendarDates) {
-            const dateIndex = calendarDates.findIndex(d => d.toDateString() === date.toDateString());
-            if (dateIndex === -1) return date;
-            
-            const weekStartIndex = Math.floor(dateIndex / 7) * 7;
-            return calendarDates[weekStartIndex];
-        }
-
-        function getWeekEnd(date, calendarDates) {
-            const dateIndex = calendarDates.findIndex(d => d.toDateString() === date.toDateString());
-            if (dateIndex === -1) return date;
-            
-            const weekEndIndex = Math.min(Math.floor(dateIndex / 7) * 7 + 6, calendarDates.length - 1);
-            return calendarDates[weekEndIndex];
-        }
-
-        function renderEventSegment(record, segmentStart, segmentEnd, calendarDates, cells, usedRows) {
-            const startIndex = calendarDates.findIndex(d => d.toDateString() === segmentStart.toDateString());
-            const endIndex = calendarDates.findIndex(d => d.toDateString() === segmentEnd.toDateString());
-            
-            if (startIndex === -1 || endIndex === -1) return;
-            
-            // 사용 가능한 행 찾기
-            let row = 0;
-            while (true) {
-                let canUseRow = true;
-                for (let i = startIndex; i <= endIndex; i++) {
-                    const dateKey = calendarDates[i].toDateString();
-                    if (!usedRows.has(dateKey)) usedRows.set(dateKey, new Set());
-                    if (usedRows.get(dateKey).has(row)) {
-                        canUseRow = false;
-                        break;
-                    }
-                }
-                if (canUseRow) break;
-                row++;
-            }
-            
-            // 행 사용 표시
-            for (let i = startIndex; i <= endIndex; i++) {
-                const dateKey = calendarDates[i].toDateString();
-                usedRows.get(dateKey).add(row);
-            }
-            
-            // 연속 일정 요소 생성
-            for (let i = startIndex; i <= endIndex; i++) {
-                const cell = cells[i];
-                const eventElement = document.createElement('div');
-                eventElement.className = 'calendar-event calendar-event-continuous';
-                
-                // 시작, 중간, 끝 스타일 적용
-                if (i === startIndex && i === endIndex) {
-                    eventElement.classList.add('single');
-                    eventElement.textContent = record.title;
-                } else if (i === startIndex) {
-                    eventElement.classList.add('start');
-                    eventElement.textContent = record.title;
-                } else if (i === endIndex) {
-                    eventElement.classList.add('end');
-                } else {
-                    // 중간
-                }
-                
-                // 위치 설정
-                eventElement.style.top = `calc(var(--spacing-sm) + 20px + ${row * 18}px)`;
-                eventElement.style.left = '2px';
-                eventElement.style.right = '2px';
-                
-                // 캘린더 색상 적용
-                const calendarColor = getCalendarColor(record.calendar.code);
-                eventElement.style.backgroundColor = calendarColor;
-                
-                // 클릭 이벤트
-                eventElement.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    editEvent(record);
-                });
-                
-                // 드래그 이벤트
-                eventElement.draggable = true;
-                eventElement.addEventListener('dragstart', (e) => {
-                    draggedEvent = record;
-                    dragStartDate = calendarDates[i];
-                    e.dataTransfer.effectAllowed = 'move';
-                    eventElement.style.opacity = '0.5';
-                });
-                
-                eventElement.addEventListener('dragend', (e) => {
-                    eventElement.style.opacity = '1';
-                    draggedEvent = null;
-                    dragStartDate = null;
-                });
-                
-                cell.appendChild(eventElement);
-            }
-        }
+        // 기존 함수들은 새로운 통합 시스템으로 대체됨
 
         function toggleCalendarVisibility(code) {
             // 캘린더 리스트에서 해당 캘린더 찾기
             const calendar = calendars.find(cal => cal.code === code);
             if (!calendar) return;
-            
+
             // 현재 표시 상태 토글
             calendar.visible = !calendar.visible;
-            
+
             // 표시 상태를 로컬 스토리지에 저장
             const visibilityData = JSON.parse(localStorage.getItem('calendarVisibility') || '{}');
             visibilityData[code] = calendar.visible;
             localStorage.setItem('calendarVisibility', JSON.stringify(visibilityData));
-            
+
             renderCategories();
             renderCalendar();
         }
@@ -1748,7 +2101,7 @@
             if (!confirm('카테고리를 삭제하시겠습니까?\n카테고리 내 데이터는 삭제되지 않습니다.')) {
                 return;
             }
-            
+
             calendars = calendars.filter(cal => cal.code !== code);
             selectedCalendars.delete(code);
             dateRecords = dateRecords.filter(record => record.calendar.code !== code);
@@ -1764,19 +2117,19 @@
             const title = $('#eventModalTitle');
             const deleteBtn = $('#eventDeleteBtn');
             const allDayCheckbox = $('#eventAllDayCheckbox');
-            
+
             if (event) {
                 title.textContent = '일정 수정';
                 $('#eventTitleInput').value = event.title;
-                
+
                 // 하루종일 여부 확인 (00:00:00 ~ 23:59:59)
                 const startTime = new Date(event.startDateTime);
                 const endTime = new Date(event.endDateTime);
                 const isAllDay = startTime.getHours() === 0 && startTime.getMinutes() === 0 && startTime.getSeconds() === 0 &&
                                  endTime.getHours() === 23 && endTime.getMinutes() === 59 && endTime.getSeconds() === 59;
-                
+
                 allDayCheckbox.checked = isAllDay;
-                
+
                 if (isAllDay) {
                     $('#eventStartDateOnly').value = startTime.toISOString().slice(0, 10);
                     $('#eventEndDateOnly').value = endTime.toISOString().slice(0, 10);
@@ -1784,7 +2137,7 @@
                     $('#eventStartDateInput').value = new Date(event.startDateTime).toISOString().slice(0, 16);
                     $('#eventEndDateInput').value = new Date(event.endDateTime).toISOString().slice(0, 16);
                 }
-                
+
                 toggleAllDayInputs(isAllDay);
                 $('#eventDescInput').value = event.description || '';
                 $('#eventCalendarSelect').value = event.calendar.code;
@@ -1795,7 +2148,7 @@
                 $('#eventDescInput').value = '';
                 allDayCheckbox.checked = false;
                 deleteBtn.style.display = 'none';
-                
+
                 if (date) {
                     const dateStr = date.toISOString().slice(0, 10);
                     $('#eventStartDateInput').value = `${dateStr}T09:00`;
@@ -1803,10 +2156,10 @@
                     $('#eventStartDateOnly').value = dateStr;
                     $('#eventEndDateOnly').value = dateStr;
                 }
-                
+
                 toggleAllDayInputs(false);
             }
-            
+
             // Populate calendar select
             const select = $('#eventCalendarSelect');
             select.innerHTML = '';
@@ -1816,7 +2169,7 @@
                 option.textContent = calendar.title;
                 select.appendChild(option);
             });
-            
+
             modal.classList.add('show');
         }
 
@@ -1825,7 +2178,7 @@
             const endDateTimeInput = $('#eventEndDateInput');
             const startDateOnlyInput = $('#eventStartDateOnly');
             const endDateOnlyInput = $('#eventEndDateOnly');
-            
+
             if (isAllDay) {
                 // 하루종일로 바뀔 때, 기존 시작/종료 날짜의 년월일을 date-only 필드에 설정
                 if (startDateTimeInput.value) {
@@ -1836,7 +2189,7 @@
                     const endDate = new Date(endDateTimeInput.value);
                     endDateOnlyInput.value = endDate.toISOString().slice(0, 10);
                 }
-                
+
                 startDateTimeInput.classList.add('hidden');
                 endDateTimeInput.classList.add('hidden');
                 startDateOnlyInput.classList.remove('hidden');
@@ -1858,29 +2211,29 @@
             const description = $('#eventDescInput').value.trim();
             const calendarCode = $('#eventCalendarSelect').value;
             const isAllDay = $('#eventAllDayCheckbox').checked;
-            
+
             let startDateTime, endDateTime;
-            
+
             if (isAllDay) {
                 const startDate = $('#eventStartDateOnly').value;
                 const endDate = $('#eventEndDateOnly').value;
-                
+
                 if (!title || !startDate || !endDate || !calendarCode) {
                     showNotification('필수 정보를 입력해주세요', 'error');
                     return;
                 }
-                
+
                 startDateTime = `${startDate} 00:00:00`;
                 endDateTime = `${endDate} 23:59:59`;
             } else {
                 const startDateTimeInput = $('#eventStartDateInput').value;
                 const endDateTimeInput = $('#eventEndDateInput').value;
-                
+
                 if (!title || !startDateTimeInput || !endDateTimeInput || !calendarCode) {
                     showNotification('필수 정보를 입력해주세요', 'error');
                     return;
                 }
-                
+
                 // 날짜 포맷을 yyyy-MM-dd HH:mm:ss로 변환
                 const formatDateTime = (dateTimeStr) => {
                     const date = new Date(dateTimeStr);
@@ -1892,23 +2245,23 @@
                     const seconds = '00';
                     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
                 };
-                
+
                 startDateTime = formatDateTime(startDateTimeInput);
                 endDateTime = formatDateTime(endDateTimeInput);
             }
-            
+
             const requestData = {
                 title,
                 startDateTime,
                 endDateTime,
                 description: description || null
             };
-            
+
             try {
                 let response;
                 if (editingEvent) {
                     response = await fetch(`/calendar/${calendarCode}/record/${editingEvent.id}`, {
-                        method: 'POST',
+                        method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(requestData)
                     });
@@ -1919,11 +2272,11 @@
                         body: JSON.stringify(requestData)
                     });
                 }
-                
+
                 if (!response.ok) throw new Error('Failed to save event');
-                
+
                 const savedEvent = await response.json();
-                
+
                 if (editingEvent) {
                     const index = dateRecords.findIndex(r => r.id === editingEvent.id);
                     if (index !== -1) {
@@ -1932,10 +2285,9 @@
                 } else {
                     dateRecords.push(savedEvent);
                 }
-                
+
                 closeModal('eventModal');
                 renderCalendar();
-                showNotification('일정이 저장되었습니다', 'success');
             } catch (error) {
                 console.error('Failed to save event:', error);
                 showNotification('일정 저장에 실패했습니다', 'error');
@@ -1944,20 +2296,19 @@
 
         async function deleteEvent() {
             if (!editingEvent) return;
-            
+
             if (!confirm('이 일정을 삭제하시겠습니까?')) return;
-            
+
             try {
                 const response = await fetch(`/calendar/${editingEvent.calendar.code}/record/${editingEvent.id}`, {
                     method: 'DELETE'
                 });
-                
+
                 if (!response.ok) throw new Error('Failed to delete event');
-                
+
                 dateRecords = dateRecords.filter(r => r.id !== editingEvent.id);
                 closeModal('eventModal');
                 renderCalendar();
-                showNotification('일정이 삭제되었습니다', 'success');
             } catch (error) {
                 console.error('Failed to delete event:', error);
                 showNotification('일정 삭제에 실패했습니다', 'error');
@@ -1969,10 +2320,10 @@
                 // 시작일과 종료일에 일수 차이만큼 더하기
                 const startDateTime = new Date(event.startDateTime);
                 const endDateTime = new Date(event.endDateTime);
-                
+
                 startDateTime.setDate(startDateTime.getDate() + daysDiff);
                 endDateTime.setDate(endDateTime.getDate() + daysDiff);
-                
+
                 // 날짜 포맷을 yyyy-MM-dd HH:mm:ss로 변환
                 const formatDateTime = (date) => {
                     const year = date.getFullYear();
@@ -1983,32 +2334,31 @@
                     const seconds = String(date.getSeconds()).padStart(2, '0');
                     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
                 };
-                
+
                 const requestData = {
                     title: event.title,
                     startDateTime: formatDateTime(startDateTime),
                     endDateTime: formatDateTime(endDateTime),
                     description: event.description || null
                 };
-                
+
                 const response = await fetch(`/calendar/${event.calendar.code}/record/${event.id}`, {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestData)
                 });
-                
+
                 if (!response.ok) throw new Error('Failed to move event');
-                
+
                 const updatedEvent = await response.json();
-                
+
                 // 로컬 데이터 업데이트
                 const index = dateRecords.findIndex(r => r.id === event.id);
                 if (index !== -1) {
                     dateRecords[index] = updatedEvent;
                 }
-                
+
                 renderCalendar();
-                showNotification('일정이 이동되었습니다', 'success');
             } catch (error) {
                 console.error('Failed to move event:', error);
                 showNotification('일정 이동에 실패했습니다', 'error');
@@ -2023,16 +2373,16 @@
         async function navigateMonth(direction) {
             const newDate = new Date(currentDate);
             newDate.setMonth(newDate.getMonth() + direction);
-            
+
             const targetMonth = formatYearMonth(newDate);
-            
+
             // Check if we need to load data for the new month
             if (!cachedMonths.has(targetMonth) && selectedCalendars.size > 0) {
                 const startMonth = formatYearMonth(new Date(newDate.getFullYear(), newDate.getMonth() - 1, 1));
                 const endMonth = formatYearMonth(new Date(newDate.getFullYear(), newDate.getMonth() + 2, 0));
                 await loadDateRecords(startMonth, endMonth);
             }
-            
+
             currentDate = newDate;
             renderCalendar();
         }
@@ -2046,7 +2396,7 @@
             const modal = $('#datePickerModal');
             const yearSelect = $('#yearSelect');
             const monthBtns = document.querySelectorAll('.month-btn');
-            
+
             // Populate years (current year ± 100 years)
             yearSelect.innerHTML = '';
             const currentYear = new Date().getFullYear();
@@ -2059,7 +2409,7 @@
                 }
                 yearSelect.appendChild(option);
             }
-            
+
             // Set selected month
             monthBtns.forEach(btn => {
                 btn.classList.remove('active');
@@ -2067,10 +2417,10 @@
                     btn.classList.add('active');
                 }
             });
-            
+
             selectedYear = currentDate.getFullYear();
             selectedMonth = currentDate.getMonth();
-            
+
             modal.classList.add('show');
         }
 
@@ -2084,13 +2434,13 @@
         function setupEventListeners() {
             // Theme toggle
             $('#themeToggle').addEventListener('click', toggleTheme);
-            
+
             // Sidebar toggle
             $('#toggleSidebar').addEventListener('click', () => {
                 const sidebar = $('#sidebar');
                 const mainContent = $('.main-content');
                 const isMobile = window.innerWidth <= 768;
-                
+
                 if (isMobile) {
                     sidebar.classList.toggle('show');
                 } else {
@@ -2102,36 +2452,36 @@
                     }
                 }
             });
-            
+
             // Navigation dropdown
             $('#navToggle').addEventListener('click', (e) => {
                 e.stopPropagation();
                 $('#navMenu').classList.toggle('show');
             });
-            
+
             document.addEventListener('click', () => {
                 $('#navMenu').classList.remove('show');
-                
+
                 // 카테고리 더보기 드롭다운 닫기
                 document.querySelectorAll('.category-more-dropdown').forEach(dropdown => {
                     dropdown.classList.remove('show');
                 });
             });
-            
+
             // Calendar navigation
             $('#prevMonth').addEventListener('click', () => navigateMonth(-1));
             $('#nextMonth').addEventListener('click', () => navigateMonth(1));
             $('#todayBtn').addEventListener('click', goToToday);
             $('#calendarTitle').addEventListener('click', openDatePicker);
-            
+
             // Date picker modal
             $('#datePickerClose').addEventListener('click', () => closeModal('datePickerModal'));
             $('#datePickerCancel').addEventListener('click', () => closeModal('datePickerModal'));
-            
+
             $('#yearSelect').addEventListener('change', (e) => {
                 selectedYear = parseInt(e.target.value);
             });
-            
+
             document.querySelectorAll('.month-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
@@ -2139,13 +2489,13 @@
                     selectedMonth = parseInt(btn.dataset.month);
                 });
             });
-            
+
             $('#datePickerConfirm').addEventListener('click', () => {
                 currentDate = new Date(selectedYear, selectedMonth, 1);
                 renderCalendar();
                 closeModal('datePickerModal');
             });
-            
+
             // Calendar code input
             const calendarCodeInput = $('#calendarCodeInput');
             calendarCodeInput.addEventListener('input', () => {
@@ -2154,21 +2504,21 @@
                     .replace(/[^A-Z0-9]/g, '')
                     .substring(0, 8);
             });
-            
+
             calendarCodeInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     $('#addCalendarCodeBtn').click();
                 }
             });
-            
+
             $('#addCalendarCodeBtn').addEventListener('click', async () => {
                 const code = calendarCodeInput.value.trim().toUpperCase();
                 if (!code) {
                     showNotification('캘린더 코드를 입력해주세요', 'error');
                     return;
                 }
-                
+
                 try {
                     await addCalendarByCode(code);
                     calendarCodeInput.value = '';
@@ -2179,9 +2529,11 @@
 
             // Category modal
             $('#addCategoryBtn').addEventListener('click', () => {
+                editingCalendarCodeForCategory = null;
+                $('#categoryModalTitle').textContent = '카테고리 추가';
                 $('#categoryModal').classList.add('show');
                 $('#categoryTitleInput').focus();
-                
+
                 // 기본 색상 프리셋 활성화
                 const colorPresets = document.querySelectorAll('.color-preset');
                 colorPresets.forEach(p => p.classList.remove('active'));
@@ -2189,26 +2541,26 @@
                     colorPresets[0].classList.add('active');
                 }
             });
-            
+
             $('#categoryClose').addEventListener('click', () => closeModal('categoryModal'));
             $('#categoryCancelBtn').addEventListener('click', () => closeModal('categoryModal'));
-            
+
             // Color picker event listeners
             const categoryColorInput = $('#categoryColorInput');
             const colorPresets = document.querySelectorAll('.color-preset');
-            
+
             colorPresets.forEach(preset => {
                 preset.addEventListener('click', () => {
                     const color = preset.dataset.color;
                     categoryColorInput.value = color;
-                    
+
                     // Remove active class from all presets
                     colorPresets.forEach(p => p.classList.remove('active'));
                     // Add active class to clicked preset
                     preset.classList.add('active');
                 });
             });
-            
+
             categoryColorInput.addEventListener('change', () => {
                 // Remove active class from all presets when custom color is selected
                 colorPresets.forEach(p => p.classList.remove('active'));
@@ -2218,23 +2570,36 @@
                 const title = $('#categoryTitleInput').value.trim();
                 const description = $('#categoryDescInput').value.trim();
                 const color = $('#categoryColorInput').value;
-                
+
                 if (!title) {
                     showNotification('제목을 입력해주세요', 'error');
                     return;
                 }
-                
+
                 try {
-                    await createCalendar(title, description, color);
+                    if (editingCalendarCodeForCategory) {
+                        const code = editingCalendarCodeForCategory;
+                        const updated = await updateCalendar(code, { title, description: description || null, color });
+                        const idx = calendars.findIndex(c => c.code === code);
+                        if (idx !== -1) {
+                            calendars[idx] = { ...calendars[idx], ...updated };
+                        }
+                        // color setting in localStorage removed
+                        editingCalendarCodeForCategory = null;
+                        renderCategories();
+                        renderCalendar();
+                    } else {
+                        await createCalendar(title, description, color);
+                    }
                     closeModal('categoryModal');
                     $('#categoryTitleInput').value = '';
                     $('#categoryDescInput').value = '';
                     $('#categoryColorInput').value = '#6366F1';
-                    colorPresets.forEach(p => p.classList.remove('active'));
-                    colorPresets[0].classList.add('active'); // 첫 번째 색상을 기본으로 활성화
-                    // 추가 성공 시 알림 제거
+                    document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('active'));
+                    const presets = document.querySelectorAll('.color-preset');
+                    if (presets.length) presets[0].classList.add('active');
                 } catch (error) {
-                    showNotification('카테고리 추가에 실패했습니다', 'error');
+                    showNotification(editingCalendarCodeForCategory ? '카테고리 수정에 실패했습니다' : '카테고리 추가에 실패했습니다', 'error');
                 }
             });
             

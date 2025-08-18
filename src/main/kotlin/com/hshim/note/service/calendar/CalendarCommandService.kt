@@ -5,6 +5,7 @@ import com.hshim.note.database.calendar.repository.CalendarDateRecordRepository
 import com.hshim.note.database.calendar.repository.CalendarRepository
 import com.hshim.note.model.calendar.CalendarDateRecordRequest
 import com.hshim.note.model.calendar.CalendarDateRecordResponse
+import com.hshim.note.model.calendar.CalendarRequest
 import com.hshim.note.model.calendar.CalendarResponse
 import com.hshim.note.util.CodeUtil.generateRandomCode
 import org.springframework.data.repository.findByIdOrNull
@@ -29,9 +30,9 @@ class CalendarCommandService(
         return CalendarResponse(calendar)
     }
 
-    fun updateTitle(code: String, title: String): CalendarResponse {
+    fun update(code: String, request: CalendarRequest): CalendarResponse {
         return calendarRepository.findByIdOrNull(code)
-            ?.apply { this.title = title }
+            ?.apply { request.updateTo(this) }
             ?.let { CalendarResponse(it) }
             ?: throw Exception("calendar not found.")
     }
