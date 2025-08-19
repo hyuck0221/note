@@ -1094,7 +1094,6 @@
             </div>
             <div class="form-group">
                 <button id="categorySubmitBtn" class="btn btn-primary">추가</button>
-                <button id="categoryCancelBtn" class="btn btn-secondary">취소</button>
             </div>
         </div>
     </div>
@@ -1143,7 +1142,6 @@
             <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; gap: var(--spacing-sm);">
                     <button id="eventSubmitBtn" class="btn btn-primary">저장</button>
-                    <button id="eventCancelBtn" class="btn btn-secondary">취소</button>
                 </div>
                 <button id="eventDeleteBtn" class="btn" style="background: var(--error); color: white; display: none;">
                     삭제
@@ -1187,7 +1185,6 @@
                 </div>
                 <div class="form-group">
                     <button id="datePickerConfirm" class="btn btn-primary">확인</button>
-                    <button id="datePickerCancel" class="btn btn-secondary">취소</button>
                 </div>
             </div>
         </div>
@@ -2343,8 +2340,6 @@
     async function deleteEvent() {
         if (!editingEvent) return;
 
-        if (!confirm('이 일정을 삭제하시겠습니까?')) return;
-
         try {
             const response = await fetch(`/calendar/${editingEvent.calendar.code}/record/${editingEvent.id}`, {
                 method: 'DELETE'
@@ -2520,10 +2515,6 @@
         $('#todayBtn').addEventListener('click', goToToday);
         $('#calendarTitle').addEventListener('click', openDatePicker);
 
-        // Date picker modal
-        $('#datePickerClose').addEventListener('click', () => closeModal('datePickerModal'));
-        $('#datePickerCancel').addEventListener('click', () => closeModal('datePickerModal'));
-
         $('#yearSelect').addEventListener('change', (e) => {
             selectedYear = parseInt(e.target.value);
         });
@@ -2560,7 +2551,7 @@
 
         $('#addCalendarCodeBtn').addEventListener('click', async () => {
             const code = calendarCodeInput.value.trim().toUpperCase();
-            
+
             if (!code) {
                 // 코드가 없으면 카테고리 추가 모달 열기
                 openCategoryModal();
@@ -2597,7 +2588,6 @@
         }
 
         $('#categoryClose').addEventListener('click', () => closeModal('categoryModal'));
-        $('#categoryCancelBtn').addEventListener('click', () => closeModal('categoryModal'));
 
         // Color picker event listeners
         const categoryColorInput = $('#categoryColorInput');
@@ -2659,7 +2649,6 @@
 
         // Event modal
         $('#eventClose').addEventListener('click', () => closeModal('eventModal'));
-        $('#eventCancelBtn').addEventListener('click', () => closeModal('eventModal'));
         $('#eventSubmitBtn').addEventListener('click', saveEvent);
         $('#eventDeleteBtn').addEventListener('click', deleteEvent);
 
@@ -2713,7 +2702,7 @@
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
             document.head.appendChild(script);
-            
+
             // 로드 완료 대기
             script.onload = () => {
                 generateQRCode();
@@ -2723,7 +2712,7 @@
         } else {
             generateQRCode();
         }
-        
+
         function generateQRCode() {
             // QR 코드 생성
             qrCodeContainer.innerHTML = '';
