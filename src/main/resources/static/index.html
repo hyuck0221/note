@@ -264,6 +264,16 @@
             font-size: var(--font-xl);
         }
 
+        .nav-arrow {
+            font-size: var(--font-sm);
+            transition: transform var(--transition-fast);
+            transform-origin: center;
+        }
+
+        .nav-dropdown.show .nav-arrow {
+            transform: rotate(180deg);
+        }
+
         /* ---------- Navigation ---------- */
         .nav-dropdown {
             position: relative;
@@ -1356,7 +1366,10 @@
                 <span>☰</span>
             </button>
             <div class="nav-dropdown">
-                <div class="logo" id="navToggle">온라인 메모장</div>
+                <div class="logo" id="navToggle">
+                    <span>온라인 메모장</span>
+                    <span class="nav-arrow">▼</span>
+                </div>
                 <div class="nav-dropdown-menu" id="navMenu">
                     <a href="/" class="nav-dropdown-item">📝 메모장</a>
                     <a href="/page/calendar" class="nav-dropdown-item">📅 캘린더</a>
@@ -1723,11 +1736,13 @@
         // 네비게이션 드롭다운
         const navToggle = document.getElementById('navToggle');
         const navMenu = document.getElementById('navMenu');
+        const navDropdown = document.querySelector('.nav-dropdown');
         
-        if (navToggle && navMenu) {
+        if (navToggle && navMenu && navDropdown) {
             navToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
                 navMenu.classList.toggle('show');
+                navDropdown.classList.toggle('show');
             });
         }
 
@@ -1744,8 +1759,9 @@
             }
             
             // 네비게이션 드롭다운 닫기
-            if (navMenu && !e.target.closest('.nav-dropdown')) {
+            if (navMenu && navDropdown && !e.target.closest('.nav-dropdown')) {
                 navMenu.classList.remove('show');
+                navDropdown.classList.remove('show');
             }
         });
 

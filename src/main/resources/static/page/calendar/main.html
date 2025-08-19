@@ -299,6 +299,16 @@
             font-size: var(--font-xl);
         }
 
+        .nav-arrow {
+            font-size: var(--font-sm);
+            transition: transform var(--transition-fast);
+            transform-origin: center;
+        }
+
+        .nav-dropdown.show .nav-arrow {
+            transform: rotate(180deg);
+        }
+
         /* ---------- Sidebar ---------- */
         .sidebar-header {
             padding: var(--spacing-lg);
@@ -978,7 +988,10 @@
                 <span>☰</span>
             </button>
             <div class="nav-dropdown">
-                <div class="logo" id="navToggle">온라인 캘린더</div>
+                <div class="logo" id="navToggle">
+                    <span>온라인 캘린더</span>
+                    <span class="nav-arrow">▼</span>
+                </div>
                 <div class="nav-dropdown-menu" id="navMenu">
                     <a href="/" class="nav-dropdown-item">📝 메모장</a>
                     <a href="/page/calendar" class="nav-dropdown-item">📅 캘린더</a>
@@ -2497,11 +2510,17 @@
         // Navigation dropdown
         $('#navToggle').addEventListener('click', (e) => {
             e.stopPropagation();
-            $('#navMenu').classList.toggle('show');
+            const navDropdown = $('.nav-dropdown');
+            const navMenu = $('#navMenu');
+            navMenu.classList.toggle('show');
+            navDropdown.classList.toggle('show');
         });
 
         document.addEventListener('click', () => {
-            $('#navMenu').classList.remove('show');
+            const navDropdown = $('.nav-dropdown');
+            const navMenu = $('#navMenu');
+            navMenu.classList.remove('show');
+            navDropdown.classList.remove('show');
 
             // 카테고리 더보기 드롭다운 닫기
             document.querySelectorAll('.category-more-dropdown').forEach(dropdown => {
