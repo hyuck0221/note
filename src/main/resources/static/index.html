@@ -2836,7 +2836,12 @@
 
                     if (activeCode) {
                         localStorage.setItem(activeCodeKey, activeCode);
-                        selectMemo(activeCode);
+                        // 자동 선택 시에는 WebSocket 중복 전송 방지
+                        selectMemo(activeCode, true);
+                        // 자동 선택 시에도 WebSocket 연결 정보 전송
+                        if (sendNoteSocketEvent) {
+                            sendNoteSocketEvent('JOIN_NOTE', activeCode);
+                        }
                     } else {
                         memoDetail.classList.add('hidden');
                         noMemoElem.classList.remove('hidden');
@@ -2934,29 +2939,43 @@
 
                 // ── 드래그 이벤트 ─────────────────────────────
                 if (el.classList.contains('in-folder')) {
-                    // 폴더 내부 메모 정렬
+                    // 폴더 내부 메모 정렬 및 폴더 밖으로 빼내기
                     el.addEventListener('dragstart', e => {
-                        draggedCode = m.code;          // 폴더 내부 정렬용
-                        draggedSidebarKey = null;      // 루트 재배치는 끄기
+                        draggedCode = m.code;          
+                        draggedSidebarKey = m.code;    // 루트로 이동도 가능하게
                         e.dataTransfer.setData('text/plain', m.code);
                         e.dataTransfer.effectAllowed = 'move';
                     });
                     el.addEventListener('dragend', () => {
                         draggedCode = null;
+                        draggedSidebarKey = null;
                         el.style.background = '';
                     });
                     el.addEventListener('dragover', e => {
                         e.preventDefault();
-                        el.style.background = 'var(--surface-secondary)';
+                        // 같은 폴더 내 메모에만 하이라이트
+                        if (draggedCode && draggedCode !== m.code) {
+                            const draggedFolder = folders.find(f => f.codes && f.codes.includes(draggedCode));
+                            const targetFolder = folders.find(f => f.codes && f.codes.includes(m.code));
+                            if (draggedFolder && targetFolder && draggedFolder.id === targetFolder.id) {
+                                el.style.background = 'var(--surface-secondary)';
+                            }
+                        }
                     });
                     el.addEventListener('dragleave', () => el.style.background = '');
                     el.addEventListener('drop', e => {
                         e.preventDefault();
                         el.style.background = '';
                         if (draggedCode && draggedCode !== m.code) {
-                            reorderMemos(draggedCode, m.code);
+                            // 같은 폴더 내에서만 정렬 허용
+                            const draggedFolder = folders.find(f => f.codes && f.codes.includes(draggedCode));
+                            const targetFolder = folders.find(f => f.codes && f.codes.includes(m.code));
+                            if (draggedFolder && targetFolder && draggedFolder.id === targetFolder.id) {
+                                reorderMemos(draggedCode, m.code);
+                            }
                         }
                         draggedCode = null;
+                        draggedSidebarKey = null;
                     });
                 } else {
                     // 루트 메모 ↔ 폴더 혼합 정렬
@@ -3143,14 +3162,43 @@
 
                     // 내부 메모 렌더
                     if (!collapsed) {
+                        const folderContainer = document.createElement('div');
+                        folderContainer.className = 'folder-content';
+                        folderContainer.setAttribute('data-folder-id', f.id);
+                        
+                        // 폴더 밖으로 드래그할 수 있는 드롭 존 추가
+                        folderContainer.addEventListener('dragover', e => {
+                            if (draggedCode && !f.codes.includes(draggedCode)) {
+                                e.preventDefault();
+                                folderContainer.style.background = 'var(--surface-secondary)';
+                            }
+                        });
+                        folderContainer.addEventListener('dragleave', e => {
+                            // 자식 요소로 이동하는 경우 제외
+                            if (!folderContainer.contains(e.relatedTarget)) {
+                                folderContainer.style.background = '';
+                            }
+                        });
+                        folderContainer.addEventListener('drop', e => {
+                            e.preventDefault();
+                            folderContainer.style.background = '';
+                            if (draggedCode && !f.codes.includes(draggedCode)) {
+                                moveNoteToFolder(draggedCode, f.id);
+                                draggedCode = null;
+                                draggedSidebarKey = null;
+                            }
+                        });
+
                         (f.codes || []).forEach(c => {
                             const m = memos.find(mm => mm.code === c);
                             if (m) {
                                 const el = buildMemo(m, false);
                                 el.classList.add('in-folder');
-                                sidebarList.appendChild(el);
+                                folderContainer.appendChild(el);
                             }
                         });
+                        
+                        sidebarList.appendChild(folderContainer);
                     }
                 } else {
                     const code = key;
@@ -3219,7 +3267,7 @@
             }
         }
 
-        function selectMemo(code) {
+        function selectMemo(code, skipWebSocket = false) {
 
             const editStatusNote = document.getElementById('editStatusNote');
             const refreshMemoBtn = document.getElementById('refreshMemoBtn');
@@ -3253,8 +3301,10 @@
 
             activeCode = code;
             localStorage.setItem(activeCodeKey, activeCode);
-            // WebSocket: join note
-            sendNoteSocketEvent && sendNoteSocketEvent('JOIN_NOTE', code);
+            // WebSocket: join note (skipWebSocket이 true면 스킵)
+            if (!skipWebSocket && sendNoteSocketEvent) {
+                sendNoteSocketEvent('JOIN_NOTE', code);
+            }
             const memo = memos.find(m => m.code === code);
             if (memo) {
                 memoDetail.classList.remove('hidden');
@@ -3300,6 +3350,10 @@
                     showNotification('제목이 저장되었습니다', 'success');
                     // WebSocket: notify save
                     sendNoteSocketEvent && sendNoteSocketEvent('SAVE_NOTE', activeCode);
+                    // 저장 완료 후 editStarted 초기화
+                    if (activeCode === codeToSave) {
+                        editStarted = false;
+                    }
                 })
                 .catch((e) => showNotification('제목 저장에 실패했습니다', 'error'));
 
@@ -3332,6 +3386,10 @@
                     showNotification('내용이 저장되었습니다', 'success');
                     // WebSocket: notify save
                     sendNoteSocketEvent && sendNoteSocketEvent('SAVE_NOTE', activeCode);
+                    // 저장 완료 후 editStarted 초기화
+                    if (activeCode === codeToSave) {
+                        editStarted = false;
+                    }
                 })
                 .catch(() => showNotification('내용 저장에 실패했습니다', 'error'));
 
@@ -3434,6 +3492,8 @@
 
                     // 새 메모를 선택하도록 fetchMemos에 전달
                     fetchMemos(code);
+                    // 새 메모 생성 시 editStarted 초기화
+                    editStarted = false;
                     showNotification('메모가 추가되었습니다', 'success');
                 })
                 .catch(() => {
@@ -3639,6 +3699,20 @@
         // ===== WebSocket for Note Realtime =====
         // WebSocket Setup
         const ws = new WebSocket(`${window.location.origin.replace('http', 'ws')}/socket/note/connect`);
+
+        ws.addEventListener('open', () => {
+            // WebSocket 연결 시 editStarted 초기화
+            editStarted = false;
+            // 현재 활성 메모가 있으면 JOIN_NOTE 이벤트 전송
+            if (activeCode && sendNoteSocketEvent) {
+                sendNoteSocketEvent('JOIN_NOTE', activeCode);
+            }
+        });
+
+        ws.addEventListener('close', () => {
+            // WebSocket 연결 끊어질 때도 editStarted 초기화
+            editStarted = false;
+        });
 
         ws.addEventListener('message', (event) => {
             const msg = JSON.parse(event.data);
