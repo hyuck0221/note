@@ -43,7 +43,6 @@
             calendarCodes.push(code);
             localStorage.setItem(calendarCodesKey, JSON.stringify(calendarCodes));
 
-            alert(`"${calendarData.title || '캘린더'}"가 성공적으로 추가되었습니다!`);
             window.location.href = '/page/calendar';
 
         } catch (error) {

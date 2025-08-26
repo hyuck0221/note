@@ -2478,12 +2478,6 @@
         modal.classList.add('show');
     }
 
-    // Notification system
-    function showNotification(message, type = 'info') {
-        // Simple alert for now - could be enhanced with a proper notification system
-        alert(message);
-    }
-
     // Event listeners setup
     function setupEventListeners() {
         // Theme toggle
@@ -2635,7 +2629,6 @@
             const color = $('#categoryColorInput').value;
 
             if (!title) {
-                showNotification('제목을 입력해주세요', 'error');
                 return;
             }
 
@@ -2662,7 +2655,6 @@
                 const presets = document.querySelectorAll('.color-preset');
                 if (presets.length) presets[0].classList.add('active');
             } catch (error) {
-                showNotification(editingCalendarCodeForCategory ? '카테고리 수정에 실패했습니다' : '카테고리 추가에 실패했습니다', 'error');
             }
         });
 
